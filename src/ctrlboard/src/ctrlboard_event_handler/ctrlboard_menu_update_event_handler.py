@@ -21,7 +21,11 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
         if isinstance(updated_object, Encoder):
             # print(updatedObject.direction)
             if updated_object.direction == 1:
-                self.menu_renderer.menu.item_selection += 1
+                if self.menu_renderer.menu.item_selection + 1 < len(self.menu_renderer.menu.entries):
+                    self.menu_renderer.menu.item_selection += 1
             if updated_object.direction == -1:
-                self.menu_renderer.menu.item_selection -= 1
+                if self.menu_renderer.menu.item_selection - 1 >= 0:
+                    self.menu_renderer.menu.item_selection -= 1
+                else:
+                    self.menu_renderer.menu.item_selection = 0
             self.menu_renderer.render()
