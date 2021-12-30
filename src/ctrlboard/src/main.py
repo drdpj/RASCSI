@@ -1,3 +1,4 @@
+from ctrlboard_event_handler.ctrlboard_test_menuitem_handler import CtrlBoardTestMenuItemHandler
 from ctrlboard_hw.ctrlboard_hw import CtrlBoardHardware
 from ctrlboard_hw.ctrlboard_hw_constants import CtrlBoardHardwareConstants
 from menu.menu import Menu
@@ -10,12 +11,13 @@ from menu.menu_renderer_config import MenuRendererConfig
 def main():
     ctrlboard_hw = CtrlBoardHardware()
 
+    menuhandler = CtrlBoardTestMenuItemHandler()
     menu = Menu()
-    menu.add_entry("Hello")
-    menu.add_entry("Foo")
-    menu.add_entry("Bar")
-    menu.add_entry("This")
-    menu.add_entry("is")
+    menu.add_entry("Hello", menuhandler.print_item_text_to_stdout)
+    menu.add_entry("Foo", menuhandler.print_item_text_to_stdout)
+    menu.add_entry("Bar", menuhandler.print_item_text_to_stdout)
+    menu.add_entry("This", menuhandler.print_item_text_to_stdout)
+    menu.add_entry("is", menuhandler.print_item_text_to_stdout)
     menu.add_entry("a")
     menu.add_entry("test")
     menu.add_entry("that")

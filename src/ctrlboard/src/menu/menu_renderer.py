@@ -54,11 +54,21 @@ class MenuRenderer:
                        stroke_fill=0, fill=0, textsize=20)
 
     def draw_menu(self):
-        if self.menu.item_selection >= self.frame_start_row+self.rows_per_screen():
-            self.frame_start_row = self.menu.item_selection + 1 - self.rows_per_screen()
+        if self.menu.item_selection >= self.frame_start_row + self.rows_per_screen():
+            if self.config.scroll_behavior == "page":
+                self.frame_start_row = self.frame_start_row + (round(self.rows_per_screen()/2)) + 1
+                if self.frame_start_row > len(self.menu.entries) - self.rows_per_screen():
+                    self.frame_start_row = len(self.menu.entries) - self.rows_per_screen()
+            else:  # extend as default behavior
+                self.frame_start_row = self.menu.item_selection + 1 - self.rows_per_screen()
 
-        if self.menu.item_selection <= self.frame_start_row:
-            self.frame_start_row = self.menu.item_selection
+        if self.menu.item_selection < self.frame_start_row:
+            if self.config.scroll_behavior == "page":
+                self.frame_start_row = self.frame_start_row - (round(self.rows_per_screen()/2)) - 1
+                if self.frame_start_row < 0:
+                    self.frame_start_row = 0
+            else:  # extend as default behavior
+                self.frame_start_row = self.menu.item_selection
 
         # print("frame start: " + str(self.frame_start_row))
         # print("frame end: " + str(self.frame_start_row+self.rows_per_screen()))
@@ -72,9 +82,9 @@ class MenuRenderer:
         row_in_menuitems = frame_start_row
         for menuEntry in itertools.islice(self.menu.entries, frame_start_row, frame_end_row):
             if row_in_menuitems == self.menu.item_selection:
-                self.draw_row(row_on_screen, menuEntry, True)
+                self.draw_row(row_on_screen, menuEntry["text"], True)
             else:
-                self.draw_row(row_on_screen, menuEntry, False)
+                self.draw_row(row_on_screen, menuEntry["text"], False)
             row_in_menuitems += 1
             row_on_screen += 1
             if row_on_screen >= self.rows_per_screen():

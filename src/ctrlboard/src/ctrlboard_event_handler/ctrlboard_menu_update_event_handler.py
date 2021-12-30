@@ -13,11 +13,18 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
 
     def update(self, updated_object):
         if isinstance(updated_object, HardwareButton):
-            self.menu_renderer.message = updated_object.name + " pressed!"
-            self.menu_renderer.render()
-            time.sleep(1)
-            self.menu_renderer.message = ""
-            self.menu_renderer.render()
+            if updated_object.name == "RotBtn":
+                menu = self.menu_renderer.menu
+                entry = dict(menu.entries[menu.item_selection])
+                callback = entry["callback"]
+                if callback is not None:
+                    callback(entry['text'])
+            else:
+                self.menu_renderer.message = updated_object.name + " pressed!"
+                self.menu_renderer.render()
+                time.sleep(1)
+                self.menu_renderer.message = ""
+                self.menu_renderer.render()
         if isinstance(updated_object, Encoder):
             # print(updatedObject.direction)
             if updated_object.direction == 1:

@@ -6,3 +6,4 @@ class MenuRendererConfig:
 #     font_path = 'resources/DejaVuSansMono-Bold.ttf'
     font_size = 12
     row_selection_pixel_extension = 2
+    scroll_behavior = "page"  # "extend" or "page"
