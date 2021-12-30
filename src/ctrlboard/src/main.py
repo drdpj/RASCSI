@@ -42,7 +42,7 @@ class MenuRenderer:
         self.draw = ImageDraw.Draw(self.image)
 
         # self.font = ImageFont.truetype('fonts/DejaVuSansMono-Bold.ttf', 12)
-        self.font = ImageFont.truetype('fonts/SourceCodePro-Bold.ttf', 12)
+        self.font = ImageFont.truetype('resources/SourceCodePro-Bold.ttf', 12)
 
     def render(self):
         i = 0
