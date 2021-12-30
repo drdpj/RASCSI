@@ -13,11 +13,10 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
 
     def update(self, updated_object):
         if isinstance(updated_object, HardwareButton):
-            # print(updated_object.name + " has been pressed!")
-            self.message = updated_object.name + " pressed!"
+            self.menu_renderer.message = updated_object.name + " pressed!"
             self.menu_renderer.render()
             time.sleep(1)
-            self.message = ""
+            self.menu_renderer.message = ""
             self.menu_renderer.render()
         if isinstance(updated_object, Encoder):
             # print(updatedObject.direction)

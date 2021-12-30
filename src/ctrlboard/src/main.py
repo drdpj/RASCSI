@@ -16,8 +16,14 @@ def main():
     menu.add_entry("Bar")
     menu.add_entry("This")
     menu.add_entry("is")
-    # menu.addEntry("a")
-    # menu.addEntry("test")
+    menu.add_entry("a")
+    menu.add_entry("test")
+    menu.add_entry("that")
+    menu.add_entry("is")
+    menu.add_entry("long")
+    menu.add_entry("enough")
+    menu.add_entry("for")
+    menu.add_entry("scrolling")
 
     menu_renderer_config = MenuRendererConfig()
     menu_renderer_config.ssd1306_i2c_address = CtrlBoardHardwareConstants.SSD1306_I2C_ADDRESS
