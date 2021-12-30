@@ -1,6 +1,8 @@
+from ctrlboard_hw.hardware_button import HardwareButton
+
 
 class Encoder:
-    def __init__(self, enc_a, enc_b):
+    def __init__(self, enc_a: HardwareButton, enc_b: HardwareButton):
         self.enc_a = enc_a
         self.enc_b = enc_b
         self.pos = 0

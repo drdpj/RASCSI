@@ -1,7 +1,10 @@
 from ctrlboard_hw.ctrlboard_hw import CtrlBoardHardware
+from ctrlboard_hw.ctrlboard_hw_constants import CtrlBoardHardwareConstants
 from menu.menu import Menu
 from ctrlboard_event_handler.ctrlboard_menu_update_event_handler import CtrlBoardMenuUpdateEventHandler
 # from ctrlboard_event_handler.ctrlboard_print_event_handler import CtrlBoardPrintEventHandler
+from menu.menu_renderer import MenuRenderer
+from menu.menu_renderer_config import MenuRendererConfig
 
 
 def main():
@@ -16,8 +19,11 @@ def main():
     # menu.addEntry("a")
     # menu.addEntry("test")
 
-    menu_renderer = CtrlBoardMenuUpdateEventHandler(menu)
-    ctrlboard_hw.attach(menu_renderer)
+    menu_renderer_config = MenuRendererConfig()
+    menu_renderer_config.ssd1306_i2c_address = CtrlBoardHardwareConstants.SSD1306_I2C_ADDRESS
+    menu_renderer = MenuRenderer(menu, menu_renderer_config)
+    menu_update_event_handler = CtrlBoardMenuUpdateEventHandler(menu_renderer)
+    ctrlboard_hw.attach(menu_update_event_handler)
 
     # print_event_handler = CtrlBoardPrintEventHandler()
     # ctrlboard_hw.attach(print_event_handler)

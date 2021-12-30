@@ -4,22 +4,23 @@ from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 from board import SCL, SDA
+from menu.menu import Menu
+from menu.menu_renderer_config import MenuRendererConfig
 
 
 class MenuRenderer:
     message = ""
 
-    def __init__(self, menu):
+    def __init__(self, menu: Menu, config: MenuRendererConfig):
         self.menu = menu
         i2c = busio.I2C(SCL, SDA)
-        self.disp = adafruit_ssd1306.SSD1306_I2C(128, 64, i2c)
+        self.disp = adafruit_ssd1306.SSD1306_I2C(config.width, config.height, i2c, addr=config.ssd1306_i2c_address)
         self.disp.fill(0)
         self.disp.show()
         self.image = Image.new('1', (self.disp.width, self.disp.height))
         self.draw = ImageDraw.Draw(self.image)
 
-        # self.font = ImageFont.truetype('fonts/DejaVuSansMono-Bold.ttf', 12)
-        self.font = ImageFont.truetype('resources/SourceCodePro-Bold.ttf', 12)
+        self.font = ImageFont.truetype(config.font_path, config.font_size)
 
     def render(self):
         i = 0

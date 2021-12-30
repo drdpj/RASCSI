@@ -1,4 +1,4 @@
-class AttributedButton:
+class HardwareButton:
     state = True
     name = "n/a"
     pca_driver = None
