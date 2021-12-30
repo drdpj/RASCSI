@@ -1,7 +1,8 @@
-# pip install smbus
 import time
 import observer
-import Adafruit_SSD1306
+from board import SCL, SDA
+import busio
+import adafruit_ssd1306
 
 from typing import List
 from ctrlboard import AttributedButton, CtrlBoard
@@ -11,112 +12,110 @@ from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 
-class ButtonPressPrinter(observer.Observer):
-	def update(self, updatedObject):
-		if isinstance(updatedObject, AttributedButton):
-			print(updatedObject.name + " has been pressed!")
-		if isinstance(updatedObject, Encoder):	
-			print(updatedObject.scaled_pos)
 
-#class CtrlBoardHandler(observer.Observer):
-#	def update(self, updatedObject):
-#		if isinstance(updatedObject, AttributedButton):
-#			print(updatedObject.name + " has been pressed!")
-#		if isinstance(updatedObject, Encoder):	
-#			print(updatedObject.direction)
+class ButtonPressPrinter(observer.Observer):
+    def update(self, updated_object):
+        if isinstance(updated_object, AttributedButton):
+            print(updated_object.name + " has been pressed!")
+        if isinstance(updated_object, Encoder):
+            print(updated_object.scaled_pos)
+
 
 class Menu:
-	_entries: List = []
-	_item_selection = 0
+    entries: List = []
+    item_selection = 0
 
-	def addEntry(self, text):
-		self._entries.append(text)
+    def add_entry(self, text):
+        self.entries.append(text)
 
-class MenuRenderer():
-	message = ""
 
-	def __init__(self, menu):
-		self.menu = menu
-		self.disp = Adafruit_SSD1306.SSD1306_128_64(rst=None)
-		self.disp.begin()
-		self.disp.clear()
-		self.disp.display()
-		self.image = Image.new('1', (self.disp.width, self.disp.height))
-		self.draw = ImageDraw.Draw(self.image)	
+class MenuRenderer:
+    message = ""
 
-		#self.font = ImageFont.truetype('fonts/DejaVuSansMono-Bold.ttf', 12)
-		self.font = ImageFont.truetype('fonts/SourceCodePro-Bold.ttf', 12)
-	
-	def render(self):
-		i = 0
-		padding = -2
-		top = padding
-		x = 0
-		
-		self.disp.clear()
-		if self.message != "":
-			self.draw.rectangle((0, 0, self.disp.width, self.disp.height), outline=0, fill=255)
-			self.draw.text((x, top + 2*12), self.message, font=self.font, stroke_fill=0, fill=0, textsize=20)			
-			self.disp.image(self.image)
-			self.disp.display()
-			return
+    def __init__(self, menu):
+        self.menu = menu
+        i2c = busio.I2C(SCL, SDA)
+        self.disp = adafruit_ssd1306.SSD1306_I2C(128, 64, i2c)
+        self.disp.fill(0)
+        self.disp.show()
+        self.image = Image.new('1', (self.disp.width, self.disp.height))
+        self.draw = ImageDraw.Draw(self.image)
 
-		self.draw.rectangle((0, 0, self.disp.width, self.disp.height), outline=0, fill=0)
-		for menuEntry in self.menu._entries:
-			if (i == self.menu._item_selection):
-				self.draw.rectangle((x, top+i*12, self.disp.width, top+(i+1)*12), outline=0, fill=255)
-				self.draw.text((x, top + i*12), menuEntry, font=self.font, stroke_fill=0, fill=0, textsize=20)
-			else:
-				self.draw.text((x, top + i*12), menuEntry, font=self.font, stroke_fill=0, fill=255, textsize=20)
+        # self.font = ImageFont.truetype('fonts/DejaVuSansMono-Bold.ttf', 12)
+        self.font = ImageFont.truetype('fonts/SourceCodePro-Bold.ttf', 12)
 
-			i += 1			
+    def render(self):
+        i = 0
+        padding = -2
+        top = padding
+        x = 0
 
-		self.disp.image(self.image)
-		self.disp.display()
+        self.disp.fill(0)
+        if self.message != "":
+            self.draw.rectangle((0, 0, self.disp.width, self.disp.height), outline=0, fill=255)
+            self.draw.text((x, top + 2 * 12), self.message, font=self.font, stroke_fill=0, fill=0, textsize=20)
+            self.disp.image(self.image)
+            self.disp.show()
+            return
+
+        self.draw.rectangle((0, 0, self.disp.width, self.disp.height), outline=0, fill=0)
+        for menuEntry in self.menu.entries:
+            if i == self.menu.item_selection:
+                self.draw.rectangle((x, top + i * 12, self.disp.width, top + (i + 1) * 12), outline=0, fill=255)
+                self.draw.text((x, top + i * 12), menuEntry, font=self.font, stroke_fill=0, fill=0, textsize=20)
+            else:
+                self.draw.text((x, top + i * 12), menuEntry, font=self.font, stroke_fill=0, fill=255, textsize=20)
+
+            i += 1
+
+        self.disp.image(self.image)
+        self.disp.show()
+
 
 class CtrlBoardMenuRenderer(MenuRenderer, observer.Observer):
-	def update(self, updatedObject):
-		if isinstance(updatedObject, AttributedButton):
-			print(updatedObject.name + " has been pressed!")
-			self.message = updatedObject.name + " pressed!"
-			self.render()
-			time.sleep(1)
-			self.message = ""
-			self.render()
-		if isinstance(updatedObject, Encoder):	
-#			print(updatedObject.direction)
-			if updatedObject.direction == 1:
-				self.menu._item_selection += 1
-			if updatedObject.direction == -1:
-				self.menu._item_selection -= 1
-			self.render()
+    def update(self, updated_object):
+        if isinstance(updated_object, AttributedButton):
+            # print(updated_object.name + " has been pressed!")
+            self.message = updated_object.name + " pressed!"
+            self.render()
+            time.sleep(1)
+            self.message = ""
+            self.render()
+        if isinstance(updated_object, Encoder):
+            # print(updatedObject.direction)
+            if updated_object.direction == 1:
+                self.menu.item_selection += 1
+            if updated_object.direction == -1:
+                self.menu.item_selection -= 1
+            self.render()
 
 
 #############################################
 # Main
 #############################################
 
+def main():
+    ctrlboard = CtrlBoard()
 
-ctrlboard = CtrlBoard()
-buttonPressPrinter = ButtonPressPrinter()
-ctrlboard.attach(buttonPressPrinter)
+    menu = Menu()
+    menu.add_entry("Hello")
+    menu.add_entry("Foo")
+    menu.add_entry("Bar")
+    menu.add_entry("This")
+    menu.add_entry("is")
+    # menu.addEntry("a")
+    # menu.addEntry("test")
 
-menu = Menu()
-menu.addEntry("Hello")
-menu.addEntry("Foo")
-menu.addEntry("Bar")
-menu.addEntry("This")
-menu.addEntry("is")
-#menu.addEntry("a")
-#menu.addEntry("test")
+    menu_renderer = CtrlBoardMenuRenderer(menu)
+    ctrlboard.attach(menu_renderer)
 
-#menuRenderer = MenuRenderer(menu)
-menuRenderer = CtrlBoardMenuRenderer(menu)
-ctrlboard.attach(menuRenderer)
+    # button_press_printer = ButtonPressPrinter()
+    # ctrlboard.attach(button_press_printer)
 
-menuRenderer.render()
-while True:
-    ctrlboard.processEvents()
+    menu_renderer.render()
+    while True:
+        ctrlboard.process_events()
 
 
-
+if __name__ == '__main__':
+    main()
