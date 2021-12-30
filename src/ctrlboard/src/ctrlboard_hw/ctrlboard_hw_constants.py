@@ -1,4 +1,4 @@
-class CtrlBoardConstants:
+class CtrlBoardHardwareConstants:
     SSD1306_I2C_ADDRESS = 0x3c
     PCA9554_I2C_ADDRESS = 0x3f
     PCA9554_PIN_ENC_A = 1

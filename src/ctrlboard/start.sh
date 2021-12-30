@@ -145,4 +145,5 @@ echo "Starting RaSCSI control board service..."
 #    echo "Starting with parameter $HEIGHT"
 #fi
 #python3 src/main.py ${ROTATION} ${HEIGHT} ${PASSWORD}
+export PYTHONPATH=${PWD}/src:${PWD}/../common/src
 python3 src/main.py
