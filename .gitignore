@@ -13,3 +13,4 @@ src/raspberrypi/hfdisk/
 *~
 messages.pot
 messages.mo
+/src/common/src/rascsi_interface_pb2.py
