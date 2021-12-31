@@ -11,9 +11,9 @@ import itertools
 
 
 class MenuRenderer:
-    message = ""
 
     def __init__(self, menu: Menu, config: MenuRendererConfig):
+        self.message = ""
         self.menu = menu
         self.config = config
         i2c = busio.I2C(SCL, SDA)
@@ -90,7 +90,7 @@ class MenuRenderer:
             if row_on_screen >= self.rows_per_screen():
                 break
 
-    def render(self):
+    def render(self, display_on_device=True):
         self.disp.fill(0)
 
         if self.message != "":
@@ -99,4 +99,6 @@ class MenuRenderer:
             self.draw_menu()
 
         self.disp.image(self.image)
-        self.disp.show()
+
+        if display_on_device is True:
+            self.disp.show()

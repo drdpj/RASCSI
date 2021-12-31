@@ -7,9 +7,10 @@ from observer import Observer
 
 class CtrlBoardMenuUpdateEventHandler(Observer):
 
-    def __init__(self, menu_renderer: MenuRenderer):
+    def __init__(self, menu_renderer: MenuRenderer, navigation_info):
         self.message = None
         self.menu_renderer = menu_renderer
+        self.navigation_info = navigation_info
 
     def update(self, updated_object):
         if isinstance(updated_object, HardwareButton):
@@ -17,8 +18,14 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
                 menu = self.menu_renderer.menu
                 entry = dict(menu.entries[menu.item_selection])
                 callback = entry["callback"]
+                # print(entry['text'])
+                # print(entry['callback'])
                 if callback is not None:
-                    callback(entry['text'])
+                    if callback.__name__ == "transition_to_menu":
+                        callback(self.menu_renderer, self.navigation_info["second_level_menu_renderer"])
+                    elif callback.__name__ == "print_item_text_to_stdout":
+                        callback(entry['text'])
+
             else:
                 self.menu_renderer.message = updated_object.name + " pressed!"
                 self.menu_renderer.render()
