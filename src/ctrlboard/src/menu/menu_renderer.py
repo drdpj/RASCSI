@@ -12,10 +12,10 @@ import itertools
 
 class MenuRenderer:
 
-    def __init__(self, menu: Menu, config: MenuRendererConfig):
+    def __init__(self, config: MenuRendererConfig):
         self.message = ""
-        self.menu = menu
-        self.config = config
+        self._menu = None
+        self._config = MenuRendererConfig()
         i2c = busio.I2C(SCL, SDA)
         self.disp = adafruit_ssd1306.SSD1306_I2C(config.width, config.height, i2c, addr=config.ssd1306_i2c_address)
         self.disp.fill(0)
@@ -27,6 +27,12 @@ class MenuRenderer:
         self.cursor_position = 0
         self.frame_start_row = 0
 
+    def set_config(self, config: MenuRendererConfig):
+        self._config = config
+
+    def set_menu(self, menu: Menu):
+        self._menu = menu
+
     def rows_per_screen(self):
         rows = self.disp.height / self.font_height
         return math.floor(rows)
@@ -37,8 +43,8 @@ class MenuRenderer:
         if selected:
             selection_extension = 0
             if row_number < self.rows_per_screen():
-                selection_extension = self.config.row_selection_pixel_extension
-            self.draw.rectangle((x, y, self.disp.width, y+self.config.font_size+selection_extension), outline=0,
+                selection_extension = self._config.row_selection_pixel_extension
+            self.draw.rectangle((x, y, self.disp.width, y+self._config.font_size+selection_extension), outline=0,
                                 fill=255)
             self.draw.text((x, y), text, font=self.font, spacing=0, stroke_fill=0, fill=0)
         else:
@@ -54,21 +60,21 @@ class MenuRenderer:
                        stroke_fill=0, fill=0, textsize=20)
 
     def draw_menu(self):
-        if self.menu.item_selection >= self.frame_start_row + self.rows_per_screen():
-            if self.config.scroll_behavior == "page":
+        if self._menu.item_selection >= self.frame_start_row + self.rows_per_screen():
+            if self._config.scroll_behavior == "page":
                 self.frame_start_row = self.frame_start_row + (round(self.rows_per_screen()/2)) + 1
-                if self.frame_start_row > len(self.menu.entries) - self.rows_per_screen():
-                    self.frame_start_row = len(self.menu.entries) - self.rows_per_screen()
+                if self.frame_start_row > len(self._menu.entries) - self.rows_per_screen():
+                    self.frame_start_row = len(self._menu.entries) - self.rows_per_screen()
             else:  # extend as default behavior
-                self.frame_start_row = self.menu.item_selection + 1 - self.rows_per_screen()
+                self.frame_start_row = self._menu.item_selection + 1 - self.rows_per_screen()
 
-        if self.menu.item_selection < self.frame_start_row:
-            if self.config.scroll_behavior == "page":
+        if self._menu.item_selection < self.frame_start_row:
+            if self._config.scroll_behavior == "page":
                 self.frame_start_row = self.frame_start_row - (round(self.rows_per_screen()/2)) - 1
                 if self.frame_start_row < 0:
                     self.frame_start_row = 0
             else:  # extend as default behavior
-                self.frame_start_row = self.menu.item_selection
+                self.frame_start_row = self._menu.item_selection
 
         # print("frame start: " + str(self.frame_start_row))
         # print("frame end: " + str(self.frame_start_row+self.rows_per_screen()))
@@ -80,8 +86,8 @@ class MenuRenderer:
         self.draw.rectangle((0, 0, self.disp.width, self.disp.height), outline=0, fill=0)
         row_on_screen = 0
         row_in_menuitems = frame_start_row
-        for menuEntry in itertools.islice(self.menu.entries, frame_start_row, frame_end_row):
-            if row_in_menuitems == self.menu.item_selection:
+        for menuEntry in itertools.islice(self._menu.entries, frame_start_row, frame_end_row):
+            if row_in_menuitems == self._menu.item_selection:
                 self.draw_row(row_on_screen, menuEntry["text"], True)
             else:
                 self.draw_row(row_on_screen, menuEntry["text"], False)
@@ -91,6 +97,14 @@ class MenuRenderer:
                 break
 
     def render(self, display_on_device=True):
+        if self._menu is None:
+            self.draw_fullsceen_message("No menu set!")
+            self.disp.image(self.image)
+
+            if display_on_device is True:
+                self.disp.show()
+            return
+
         self.disp.fill(0)
 
         if self.message != "":
@@ -102,3 +116,5 @@ class MenuRenderer:
 
         if display_on_device is True:
             self.disp.show()
+
+        return self.image

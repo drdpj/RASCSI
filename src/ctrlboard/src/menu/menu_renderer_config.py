@@ -7,3 +7,5 @@ class MenuRendererConfig:
     font_size = 12
     row_selection_pixel_extension = 2
     scroll_behavior = "page"  # "extend" or "page"
+#    scroll_behavior = "extend"  # "extend" or "page"
+    transition = "PushTransition"
