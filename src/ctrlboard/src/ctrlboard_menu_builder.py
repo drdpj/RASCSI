@@ -9,9 +9,9 @@ class CtrlBoardMenuBuilder(MenuBuilder):
     _ACTION_MENU = "action_menu"
 
     def __init__(self, rascsi_client: RaScsiClient):
-        self._rascsi_client = rascsi_client
+        super().__init__(rascsi_client)
 
-    def build(self, name: str):
+    def build(self, name: str) -> Menu:
         if name == CtrlBoardMenuBuilder._SCSI_ID_MENU:
             return self.create_scsi_id_list_menu()
         elif name == CtrlBoardMenuBuilder._ACTION_MENU:
@@ -47,7 +47,10 @@ class CtrlBoardMenuBuilder(MenuBuilder):
                 device_type = str(device["device_type"])
 
             menu_str = str(scsi_id) + ":"
-            menu_str += file
+            if file == "":
+                menu_str += "(empty)"
+            else:
+                menu_str += file
             if device_type != "":
                 menu_str += " [" + device_type + "]"
 

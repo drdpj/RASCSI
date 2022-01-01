@@ -1,5 +1,6 @@
-from typing import List, Dict, Optional
+from typing import Dict, Optional
 from menu.menu import Menu
+from menu.menu_builder import MenuBuilder
 from menu.menu_renderer import MenuRenderer
 from menu.menu_renderer_config import MenuRendererConfig
 import importlib
@@ -7,11 +8,11 @@ import importlib
 
 class MenuController:
 
-    def __init__(self, menu_builder, menu_renderer=None):
+    def __init__(self, menu_builder: MenuBuilder, menu_renderer=None):
         self._menus: Dict[str, Menu] = {}
         self._active_menu: Optional[Menu] = None
         self._menu_renderer = menu_renderer
-        self._menu_builder = menu_builder
+        self._menu_builder: MenuBuilder = menu_builder
         if self._menu_renderer is None:
             self._menu_renderer_config = MenuRendererConfig()
             self._menu_renderer = MenuRenderer(self._menu_renderer_config)
@@ -46,3 +47,6 @@ class MenuController:
 
     def get_menu_renderer(self):
         return self._menu_renderer
+
+    def get_rascsi_client(self):
+        return self._menu_builder.get_rascsi_client()

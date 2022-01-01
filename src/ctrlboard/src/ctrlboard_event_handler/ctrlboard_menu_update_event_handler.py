@@ -16,11 +16,9 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
         if isinstance(updated_object, HardwareButton):
             if updated_object.name == "RotBtn":
                 menu = self._menu_controller.get_active_menu()
-
                 info_object = menu.get_current_info_object()
                 self.process_scsi_id_list_context_actions(info_object)
                 self.process_action_menu_actions(info_object)
-
                 self._menu_controller.get_menu_renderer().render()
             else:
                 self._menu_controller.get_menu_renderer().message = updated_object.name + " pressed!"
@@ -49,7 +47,28 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
                 print(self._menu_controller.get_active_menu().context_object)
                 self.scsi_id_list_menu_segue()
             if info_object["action"] == "slot_command_detach_eject":
-                print(self._menu_controller.get_active_menu().context_object)
+                context_object = self._menu_controller.get_active_menu().context_object
+                rascsi_client = self._menu_controller.get_rascsi_client()
+                scsi_id = context_object["scsi_id"]
+                device_info = rascsi_client.list_devices(scsi_id)
+                device_type = device_info["device_list"][0]["device_type"]
+                image = device_info["device_list"][0]["image"]
+                # ['SAHD', 'SCHD', 'SCRM', 'SCMO', 'SCCD', 'SCBR', 'SCDP']}
+                # ['SCBR', 'SCDP']}
+
+                if device_type == "SAHD" or device_type == "SCHD":
+                    result = rascsi_client.detach_by_id(scsi_id)
+                    self.show_id_action_message(scsi_id, "detached")
+                elif device_type == "SCRM" or device_type == "SCMO" or device_type == "SCCD":
+                    if len(image) > 0:
+                        result = rascsi_client.eject_by_id(scsi_id)
+                        self.show_id_action_message(scsi_id, "ejected")
+                    else:
+                        result = rascsi_client.detach_by_id(scsi_id)
+                        self.show_id_action_message(scsi_id, "detached")
+                else:
+                    print("device type currently unhandled!")
+
                 self.scsi_id_list_menu_segue()
             if info_object["action"] == "slot_command_info":
                 print(self._menu_controller.get_active_menu().context_object)
@@ -60,6 +79,12 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
             if info_object["action"] == "shutdown":
                 print(self._menu_controller.get_active_menu().context_object)
                 self.scsi_id_list_menu_segue()
+
+    def show_id_action_message(self, scsi_id, action: str):
+        self._menu_controller.get_menu_renderer().message = "ID " + str(scsi_id) + " " + action + "!"
+        self._menu_controller.get_menu_renderer().render()
+        time.sleep(2)
+        self._menu_controller.get_menu_renderer().message = ""
 
     def scsi_id_list_menu_segue(self):
         self._menu_controller.get_active_menu().context_object = None
