@@ -31,16 +31,27 @@ class MenuController:
             print("transition module does not exist. Falling back to default.")
             self._transition = None
 
-    def add(self, name: str):
+    def add(self, name: str, context_object=None):
         self._menus[name] = self._menu_builder.build(name)
+        if context_object is not None:
+            self._menus[name].context_object = context_object
 
     def set_active_menu(self, name: str):
         self._active_menu = self._menus[name]
         self._menu_renderer.set_menu(self._active_menu)
         self._menu_renderer.render()
 
-    def refresh_menu(self, name: str):
+    def refresh(self, name: str, context_object=None):
+        item_selection = None
+        if self._menus.get(name) is not None:
+            item_selection = self._menus[name].item_selection
         self._menus[name] = self._menu_builder.build(name)
+
+        if context_object is not None:
+            self._menus[name].context_object = context_object
+
+        if item_selection is not None:
+            self._menus[name].item_selection = item_selection
 
     def get_active_menu(self):
         return self._active_menu

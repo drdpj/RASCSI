@@ -7,6 +7,7 @@ class CtrlBoardMenuBuilder(MenuBuilder):
 
     _SCSI_ID_MENU = "scsi_id_menu"
     _ACTION_MENU = "action_menu"
+    _IMAGES_MENU = "images_menu"
 
     def __init__(self, rascsi_client: RaScsiClient):
         super().__init__(rascsi_client)
@@ -16,6 +17,8 @@ class CtrlBoardMenuBuilder(MenuBuilder):
             return self.create_scsi_id_list_menu()
         elif name == CtrlBoardMenuBuilder._ACTION_MENU:
             return self.create_action_menu()
+        elif name == CtrlBoardMenuBuilder._IMAGES_MENU:
+            return self.create_images_menu()
         else:
             print("Provided menu name [" + name + "] cannot be built!")
 
@@ -69,4 +72,18 @@ class CtrlBoardMenuBuilder(MenuBuilder):
         menu.add_entry("Info", {"context": "action_menu", "action": "slot_command_info"})
         menu.add_entry("Load Profile", {"context": "action_menu", "action": "load_profile"})
         menu.add_entry("General: Shutdown", {"context": "action_menu", "action": "shutdown"})
+        return menu
+
+    def create_images_menu(self):
+        menu = Menu(CtrlBoardMenuBuilder._IMAGES_MENU)
+        images_info = self._rascsi_client.get_image_files_info()
+        menu.add_entry("Return", {"context": "images_menu", "action": "return"})
+        images = images_info["image_files"]
+        device_types = self.get_rascsi_client().get_device_types()
+        for image in images:
+            menu.add_entry(str(image.name) + " [" + str(device_types["device_types"][int(image.type)-1]) + "]",
+                           {"context": "images_menu", "name": str(image.name),
+                            "device_type": str(device_types["device_types"][int(image.type)-1]),
+                            "action": "attach_insert"})
+
         return menu
