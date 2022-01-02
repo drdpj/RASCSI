@@ -11,20 +11,20 @@ from socket_cmds import SocketTools
 
 def main():
     ctrlboard_hw = CtrlBoardHardware()
-    rascsi_client = RaScsiClient(SocketTools(), '192.168.10.155', 6868)
+    rascsi_client = RaScsiClient(SocketTools(), 'localhost', 6868)
 
     menu_renderer_config = MenuRendererConfig()
     menu_renderer_config.ssd1306_i2c_address = CtrlBoardHardwareConstants.SSD1306_I2C_ADDRESS
 
     menu_builder = CtrlBoardMenuBuilder(rascsi_client)
     menu_controller = MenuController(menu_builder)
-    menu_controller.add("scsi_id_menu")
-    menu_controller.add("action_menu")
+    menu_controller.add(CtrlBoardMenuBuilder.SCSI_ID_MENU)
+    menu_controller.add(CtrlBoardMenuBuilder.ACTION_MENU)
 
     menu_update_event_handler = CtrlBoardMenuUpdateEventHandler(menu_controller)
     ctrlboard_hw.attach(menu_update_event_handler)
 
-    menu_controller.set_active_menu("scsi_id_menu")
+    menu_controller.set_active_menu(CtrlBoardMenuBuilder.SCSI_ID_MENU)
 
     # menu_controller = MenuController(menu_renderer=menu_renderer)
     # print_event_handler = CtrlBoardPrintEventHandler()

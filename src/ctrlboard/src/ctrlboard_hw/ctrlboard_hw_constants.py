@@ -9,3 +9,11 @@ class CtrlBoardHardwareConstants:
     PCA9554_PIN_BUTTON_ROTARY = 5
     PCA9554_PIN_LED_1 = 6
     PCA9554_PIN_LED_2 = 7
+
+    BUTTON_1 = "Bt1"
+    BUTTON_2 = "Bt2"
+    BUTTON_3 = "Bt3"
+    ROTARY_A = "RotA"
+    ROTARY_B = "RotB"
+    ROTARY_BUTTON = "RotBtn"
+    ROTARY = "Rot"

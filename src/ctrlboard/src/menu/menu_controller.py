@@ -67,7 +67,7 @@ class MenuController:
     def get_rascsi_client(self):
         return self._menu_builder.get_rascsi_client()
 
-    def segue(self, name, context_object=None):
+    def segue(self, name, context_object=None, transition_attributes=None):
         self.get_active_menu().context_object = None
         self.refresh(name, context_object)
 
@@ -75,7 +75,7 @@ class MenuController:
             self._transition_menu_renderer.set_menu(self.get_menu(name))
             self._transition_menu_renderer.render(display_on_device=False)
             target_image = self._transition_menu_renderer.image
-            self._transition.perform(self._menu_renderer.image, target_image)
+            self._transition.perform(self._menu_renderer.image, target_image, transition_attributes)
 
         self.set_active_menu(name)
 

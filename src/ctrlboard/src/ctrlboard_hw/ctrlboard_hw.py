@@ -22,39 +22,39 @@ class CtrlBoardHardware(Observable):
         # configure button of the rotary encoder
         self.rotary_button = HardwareButton(pca_driver, CtrlBoardHardwareConstants.PCA9554_PIN_BUTTON_ROTARY)
         self.rotary_button.state = True
-        self.rotary_button.name = "RotBtn"
+        self.rotary_button.name = CtrlBoardHardwareConstants.ROTARY_BUTTON
 
         # configure button 1
         self.button1 = HardwareButton(pca_driver, CtrlBoardHardwareConstants.PCA9554_PIN_BUTTON_1)
         self.button1.state = True
-        self.button1.name = "Bt1"
+        self.button1.name = CtrlBoardHardwareConstants.BUTTON_1
 
         # configure button 2
         self.button2 = HardwareButton(pca_driver, CtrlBoardHardwareConstants.PCA9554_PIN_BUTTON_2)
         self.button2.state = True
-        self.button2.name = "Bt2"
+        self.button2.name = CtrlBoardHardwareConstants.BUTTON_2
 
         # configure button 3
         self.button3 = HardwareButton(pca_driver, CtrlBoardHardwareConstants.PCA9554_PIN_BUTTON_3)
         self.button3.state = True
-        self.button3.name = "Bt3"
+        self.button3.name = CtrlBoardHardwareConstants.BUTTON_3
 
         # configure rotary encoder pin a
         self.rotary_a = HardwareButton(pca_driver, CtrlBoardHardwareConstants.PCA9554_PIN_ENC_A)
         self.rotary_a.state = True
         self.rotary_a.directionalTransition = False
-        self.rotary_a.name = "RotA"
+        self.rotary_a.name = CtrlBoardHardwareConstants.ROTARY_A
 
         # configure rotary encoder pin b
         self.rotary_b = HardwareButton(pca_driver, CtrlBoardHardwareConstants.PCA9554_PIN_ENC_B)
         self.rotary_b.state = True
         self.rotary_b.directionalTransition = False
-        self.rotary_b.name = "RotB"
+        self.rotary_b.name = CtrlBoardHardwareConstants.ROTARY_B
 
         # configure encoder object
         self.rotary = Encoder(self.rotary_a, self.rotary_b)
         self.rotary.pos_prev = 0
-        self.rotary.name = "Rot"
+        self.rotary.name = CtrlBoardHardwareConstants.ROTARY
 
     def check_button_press(self, button):
         value = button.read()

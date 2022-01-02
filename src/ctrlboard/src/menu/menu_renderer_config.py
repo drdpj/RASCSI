@@ -10,3 +10,6 @@ class MenuRendererConfig:
 #    scroll_behavior = "extend"  # "extend" or "page"
 #    transition = "PushTransition"
     transition = "None"
+    transition_attributes_left = {"direction": "push_left"}
+    transition_attributes_right = {"direction": "push_right"}
+    transition_speed = 20

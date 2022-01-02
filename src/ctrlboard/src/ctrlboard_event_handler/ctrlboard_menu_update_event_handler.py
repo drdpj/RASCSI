@@ -1,7 +1,10 @@
+from ctrlboard_hw.ctrlboard_hw_constants import CtrlBoardHardwareConstants
 from ctrlboard_menu_builder import CtrlBoardMenuBuilder
+from file_cmds import FileTools
 from menu.menu_controller import MenuController
 from ctrlboard_hw.hardware_button import HardwareButton
 from ctrlboard_hw.encoder import Encoder
+from menu.menu_renderer_config import MenuRendererConfig
 from observer import Observer
 
 
@@ -13,7 +16,7 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
 
     def update(self, updated_object):
         if isinstance(updated_object, HardwareButton):
-            if updated_object.name == "RotBtn":
+            if updated_object.name == CtrlBoardHardwareConstants.ROTARY_BUTTON:
                 menu = self._menu_controller.get_active_menu()
                 info_object = menu.get_current_info_object()
 
@@ -49,38 +52,49 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
 
     def handle_scsi_id_menu_openactionmenu(self, info_object):
         context_object = self._menu_controller.get_active_menu().get_current_info_object()
-        self._menu_controller.segue(CtrlBoardMenuBuilder.ACTION_MENU, context_object=context_object)
+        self._menu_controller.segue(CtrlBoardMenuBuilder.ACTION_MENU, context_object=context_object,
+                                    transition_attributes=MenuRendererConfig.transition_attributes_left)
 
     def handle_action_menu_return(self, info_object):
-        self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU)
+        self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU,
+                                    transition_attributes=MenuRendererConfig.transition_attributes_right)
 
     def handle_action_menu_slot_attachinsert(self, info_object):
         context_object = self._menu_controller.get_active_menu().context_object
         scsi_id = context_object["scsi_id"]
-        self._menu_controller.segue(CtrlBoardMenuBuilder.IMAGES_MENU, context_object=context_object)
+        self._menu_controller.segue(CtrlBoardMenuBuilder.IMAGES_MENU, context_object=context_object,
+                                    transition_attributes=MenuRendererConfig.transition_attributes_left)
 
     def handle_action_menu_slot_detacheject(self, info_object):
         self.detach_eject_scsi_id()
-        self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU)
+        self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU,
+                                    transition_attributes={})
 
     def handle_action_menu_slot_info(self, info_object):
         print(self._menu_controller.get_active_menu().context_object)
-        self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU)
+        self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU,
+                                    transition_attributes=MenuRendererConfig.transition_attributes_left)
 
     def handle_action_menu_loadprofile(self, info_object):
         print(self._menu_controller.get_active_menu().context_object)
-        self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU)
+        self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU,
+                                    transition_attributes=MenuRendererConfig.transition_attributes_left)
+        file_tools = FileTools(rascsi_client=self._menu_controller.get_rascsi_client())
+        print(file_tools.list_config_files())
 
     def handle_action_menu_shutdown(self, info_object):
         print(self._menu_controller.get_active_menu().context_object)
-        self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU)
+        self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU,
+                                    transition_attributes=MenuRendererConfig.transition_attributes_right)
 
     def handle_images_menu_return(self, info_object):
-        self._menu_controller.segue(CtrlBoardMenuBuilder.ACTION_MENU)
+        self._menu_controller.segue(CtrlBoardMenuBuilder.ACTION_MENU,
+                                    transition_attributes=MenuRendererConfig.transition_attributes_right)
 
     def handle_images_menu_image_attachinsert(self, info_object):
         self.attach_insert_scsi_id(info_object)
-        self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU)
+        self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU,
+                                    transition_attributes={})
 
     def attach_insert_scsi_id(self, info_object):
         image_name = info_object["name"]
@@ -98,8 +112,7 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
         device_info = rascsi_client.list_devices(scsi_id)
         device_type = device_info["device_list"][0]["device_type"]
         image = device_info["device_list"][0]["image"]
-        # ['SAHD', 'SCHD', 'SCRM', 'SCMO', 'SCCD', 'SCBR', 'SCDP']}
-        # ['SCBR', 'SCDP']}
+        # TODO: deal with SCBR and SCDP properly
         if device_type == "SAHD" or device_type == "SCHD":
             result = rascsi_client.detach_by_id(scsi_id)
             self.show_id_action_message(scsi_id, "detached")
