@@ -1,6 +1,5 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from PIL import Image
-from PIL import ImageDraw
 from menu.menu_renderer_config import MenuRendererConfig
 
 
@@ -25,17 +24,16 @@ class PushTransition(Transition):
             direction = transition_attributes["direction"]
 
         transition_image = Image.new('1', (self.disp.width, self.disp.height))
-        transition_draw = ImageDraw.Draw(transition_image)
 
         if direction == PushTransition.PUSH_LEFT_TRANSITION:
-            self.perform_push_left(end_image, start_image, transition_draw, transition_image)
+            self.perform_push_left(end_image, start_image, transition_image)
         elif direction == PushTransition.PUSH_RIGHT_TRANSITION:
-            self.perform_push_right(end_image, start_image, transition_draw, transition_image)
+            self.perform_push_right(end_image, start_image, transition_image)
         else:
             self.disp.image(end_image)
             self.disp.show()
 
-    def perform_push_left(self, end_image, start_image, transition_draw, transition_image):
+    def perform_push_left(self, end_image, start_image, transition_image):
         for x in range(0, 128, MenuRendererConfig.transition_speed):
             left_region = start_image.crop((x, 0, 128, 64))
             right_region = end_image.crop((0, 0, x, 64))
@@ -46,7 +44,7 @@ class PushTransition(Transition):
         self.disp.image(end_image)
         self.disp.show()
 
-    def perform_push_right(self, end_image, start_image, transition_draw, transition_image):
+    def perform_push_right(self, end_image, start_image, transition_image):
         for x in range(0, 128, MenuRendererConfig.transition_speed):
             left_region = start_image.crop((0, 0, 128-x, 64))
             right_region = end_image.crop((128-x, 0, 128, 64))
@@ -56,4 +54,3 @@ class PushTransition(Transition):
             self.disp.show()
         self.disp.image(end_image)
         self.disp.show()
-

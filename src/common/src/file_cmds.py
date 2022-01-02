@@ -55,7 +55,7 @@ class FileTools:
                             "product": row["product"],
                             "revision": row["revision"],
                             "block_size": row["block_size"],
-                            }
+                        }
                         params = dict(row["params"])
                         for param in params.keys():
                             kwargs[param] = params[param]
@@ -75,7 +75,7 @@ class FileTools:
                             "product": row["product"],
                             "revision": row["revision"],
                             "block_size": row["block_size"],
-                            }
+                        }
                         params = dict(row["params"])
                         for param in params.keys():
                             kwargs[param] = params[param]
@@ -85,7 +85,7 @@ class FileTools:
                 return {
                     "status": True,
                     "msg": "Loaded configurations from: " + file_name,  # TODO:localization reversed!!!
-                    }
+                }
         except (IOError, ValueError, EOFError, TypeError) as error:
             logging.error(str(error))
             return {"status": False, "msg": str(error)}
@@ -94,6 +94,6 @@ class FileTools:
             return {
                 "status": False,
                 "msg": "Could not read configuration file: " + file_name,  # TODO:localization reversed!!!
-                }
+            }
 
 

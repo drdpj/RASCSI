@@ -50,43 +50,58 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
         except AttributeError:
             print("handler function [" + str(handler_function_name) + "] not found. Skipping.")
 
+    # noinspection PyUnusedLocal
     def handle_scsi_id_menu_openactionmenu(self, info_object):
         context_object = self._menu_controller.get_active_menu().get_current_info_object()
         self._menu_controller.segue(CtrlBoardMenuBuilder.ACTION_MENU, context_object=context_object,
                                     transition_attributes=MenuRendererConfig.transition_attributes_left)
 
+    # noinspection PyUnusedLocal
     def handle_action_menu_return(self, info_object):
         self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU,
                                     transition_attributes=MenuRendererConfig.transition_attributes_right)
 
+    # noinspection PyUnusedLocal
     def handle_action_menu_slot_attachinsert(self, info_object):
         context_object = self._menu_controller.get_active_menu().context_object
         scsi_id = context_object["scsi_id"]
         self._menu_controller.segue(CtrlBoardMenuBuilder.IMAGES_MENU, context_object=context_object,
                                     transition_attributes=MenuRendererConfig.transition_attributes_left)
 
+    # noinspection PyUnusedLocal
     def handle_action_menu_slot_detacheject(self, info_object):
         self.detach_eject_scsi_id()
         self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU,
                                     transition_attributes={})
 
+    # noinspection PyUnusedLocal
     def handle_action_menu_slot_info(self, info_object):
         print(self._menu_controller.get_active_menu().context_object)
         self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU,
                                     transition_attributes=MenuRendererConfig.transition_attributes_left)
 
+    # noinspection PyUnusedLocal
     def handle_action_menu_loadprofile(self, info_object):
-        print(self._menu_controller.get_active_menu().context_object)
+        self._menu_controller.segue(CtrlBoardMenuBuilder.PROFILES_MENU,
+                                    transition_attributes=MenuRendererConfig.transition_attributes_right)
+
+# noinspection PyUnusedLocal
+    def handle_profiles_menu_loadprofile(self, info_object):
+        if info_object is not None and "name" in info_object:
+            file_tools = FileTools(rascsi_client=self._menu_controller.get_rascsi_client())
+            file_tools.read_config(file_name=info_object["name"])
+            self._menu_controller.show_message("Profile loaded!")
+
         self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU,
                                     transition_attributes=MenuRendererConfig.transition_attributes_left)
-        file_tools = FileTools(rascsi_client=self._menu_controller.get_rascsi_client())
-        print(file_tools.list_config_files())
 
+    # noinspection PyUnusedLocal
     def handle_action_menu_shutdown(self, info_object):
         print(self._menu_controller.get_active_menu().context_object)
         self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU,
                                     transition_attributes=MenuRendererConfig.transition_attributes_right)
 
+    # noinspection PyUnusedLocal
     def handle_images_menu_return(self, info_object):
         self._menu_controller.segue(CtrlBoardMenuBuilder.ACTION_MENU,
                                     transition_attributes=MenuRendererConfig.transition_attributes_right)
@@ -103,6 +118,7 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
         scsi_id = context_object["scsi_id"]
         rascsi_client = self._menu_controller.get_rascsi_client()
         rascsi_client.attach_image(scsi_id=scsi_id, device_type=device_type, image=image_name)
+        # TODO: message should depend on the actual result!
         self.show_id_action_message(scsi_id, "attached")
 
     def detach_eject_scsi_id(self):
@@ -110,6 +126,10 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
         rascsi_client = self._menu_controller.get_rascsi_client()
         scsi_id = context_object["scsi_id"]
         device_info = rascsi_client.list_devices(scsi_id)
+
+        if len(device_info["device_list"]) == 0:
+            return
+
         device_type = device_info["device_list"][0]["device_type"]
         image = device_info["device_list"][0]["image"]
         # TODO: deal with SCBR and SCDP properly
@@ -119,11 +139,14 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
         elif device_type == "SCRM" or device_type == "SCMO" or device_type == "SCCD":
             if len(image) > 0:
                 result = rascsi_client.eject_by_id(scsi_id)
+                # TODO: message should depend on the actual result!
                 self.show_id_action_message(scsi_id, "ejected")
             else:
                 result = rascsi_client.detach_by_id(scsi_id)
+                # TODO: message should depend on the actual result!
                 self.show_id_action_message(scsi_id, "detached")
         else:
+            # TODO: message should depend on the actual result!
             print("device type currently unhandled!")
 
     def show_id_action_message(self, scsi_id, action: str):

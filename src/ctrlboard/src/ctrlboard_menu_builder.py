@@ -1,3 +1,4 @@
+from file_cmds import FileTools
 from menu.menu import Menu
 from menu.menu_builder import MenuBuilder
 from rascsi_client import RaScsiClient
@@ -7,6 +8,7 @@ class CtrlBoardMenuBuilder(MenuBuilder):
     SCSI_ID_MENU = "scsi_id_menu"
     ACTION_MENU = "action_menu"
     IMAGES_MENU = "images_menu"
+    PROFILES_MENU = "profiles_menu"
 
     ACTION_OPENACTIONMENU = "openactionmenu"
     ACTION_RETURN = "return"
@@ -27,6 +29,8 @@ class CtrlBoardMenuBuilder(MenuBuilder):
             return self.create_action_menu()
         elif name == CtrlBoardMenuBuilder.IMAGES_MENU:
             return self.create_images_menu()
+        elif name == CtrlBoardMenuBuilder.PROFILES_MENU:
+            return self.create_profiles_menu()
         else:
             print("Provided menu name [" + name + "] cannot be built!")
 
@@ -95,3 +99,16 @@ class CtrlBoardMenuBuilder(MenuBuilder):
                             "action": self.ACTION_IMAGE_ATTACHINSERT})
 
         return menu
+
+    def create_profiles_menu(self):
+        menu = Menu(CtrlBoardMenuBuilder.PROFILES_MENU)
+        menu.add_entry("Return", {"context": self.IMAGES_MENU, "action": self.ACTION_RETURN})
+        file_tools = FileTools(rascsi_client=self._rascsi_client)
+        config_files = file_tools.list_config_files()
+        for config_file in config_files:
+            menu.add_entry(str(config_file),
+                           {"context": self.PROFILES_MENU, "name": str(config_file),
+                            "action": self.ACTION_LOADPROFILE})
+
+        return menu
+
