@@ -9,7 +9,7 @@ class MenuBuilder(ABC):
         self._rascsi_client = rascsi_client
 
     @abstractmethod
-    def build(self, name: str) -> Menu:
+    def build(self, name: str, context_object=None) -> Menu:
         pass
 
     def get_rascsi_client(self):

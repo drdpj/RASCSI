@@ -47,7 +47,7 @@ class MenuController:
         item_selection = None
         if self._menus.get(name) is not None:
             item_selection = self._menus[name].item_selection
-        self._menus[name] = self._menu_builder.build(name)
+        self._menus[name] = self._menu_builder.build(name, context_object)
 
         if context_object is not None:
             self._menus[name].context_object = context_object

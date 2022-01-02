@@ -40,6 +40,9 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
             self._menu_controller.get_menu_renderer().render()
 
     def route_rotary_button_handler(self, info_object):
+        if info_object is None:
+            return
+
         context = info_object["context"]
         action = info_object["action"]
         handler_function_name = "handle_" + context + "_" + action
@@ -76,16 +79,23 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
 
     # noinspection PyUnusedLocal
     def handle_action_menu_slot_info(self, info_object):
-        print(self._menu_controller.get_active_menu().context_object)
-        self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU,
-                                    transition_attributes=MenuRendererConfig.transition_attributes_left)
+        context_object = self._menu_controller.get_active_menu().context_object
+        self._menu_controller.segue(CtrlBoardMenuBuilder.DEVICEINFO_MENU,
+                                    transition_attributes=MenuRendererConfig.transition_attributes_left,
+                                    context_object=context_object)
+
+    # noinspection PyUnusedLocal
+    def handle_device_info_menu_return(self, info_object):
+        context_object = self._menu_controller.get_active_menu().context_object
+        self._menu_controller.segue(CtrlBoardMenuBuilder.ACTION_MENU,
+                                    transition_attributes=MenuRendererConfig.transition_attributes_right, context_object=context_object)
 
     # noinspection PyUnusedLocal
     def handle_action_menu_loadprofile(self, info_object):
         self._menu_controller.segue(CtrlBoardMenuBuilder.PROFILES_MENU,
-                                    transition_attributes=MenuRendererConfig.transition_attributes_right)
+                                    transition_attributes=MenuRendererConfig.transition_attributes_left)
 
-# noinspection PyUnusedLocal
+    # noinspection PyUnusedLocal
     def handle_profiles_menu_loadprofile(self, info_object):
         if info_object is not None and "name" in info_object:
             file_tools = FileTools(rascsi_client=self._menu_controller.get_rascsi_client())
@@ -118,6 +128,8 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
         context_object = self._menu_controller.get_active_menu().context_object
         scsi_id = context_object["scsi_id"]
         rascsi_client = self._menu_controller.get_rascsi_client()
+        # TODO: check if device_type == device_type of slot! Currently it exits with exception here if SCRM is
+        #  inserted into SCCD
         rascsi_client.attach_image(scsi_id=scsi_id, device_type=device_type, image=image_name)
         # TODO: message should depend on the actual result!
         self.show_id_action_message(scsi_id, "attached")

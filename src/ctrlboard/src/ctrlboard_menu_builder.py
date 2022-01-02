@@ -9,6 +9,7 @@ class CtrlBoardMenuBuilder(MenuBuilder):
     ACTION_MENU = "action_menu"
     IMAGES_MENU = "images_menu"
     PROFILES_MENU = "profiles_menu"
+    DEVICEINFO_MENU = "device_info_menu"
 
     ACTION_OPENACTIONMENU = "openactionmenu"
     ACTION_RETURN = "return"
@@ -22,19 +23,21 @@ class CtrlBoardMenuBuilder(MenuBuilder):
     def __init__(self, rascsi_client: RaScsiClient):
         super().__init__(rascsi_client)
 
-    def build(self, name: str) -> Menu:
+    def build(self, name: str, context_object=None) -> Menu:
         if name == CtrlBoardMenuBuilder.SCSI_ID_MENU:
-            return self.create_scsi_id_list_menu()
+            return self.create_scsi_id_list_menu(context_object)
         elif name == CtrlBoardMenuBuilder.ACTION_MENU:
-            return self.create_action_menu()
+            return self.create_action_menu(context_object)
         elif name == CtrlBoardMenuBuilder.IMAGES_MENU:
-            return self.create_images_menu()
+            return self.create_images_menu(context_object)
         elif name == CtrlBoardMenuBuilder.PROFILES_MENU:
-            return self.create_profiles_menu()
+            return self.create_profiles_menu(context_object)
+        elif name == CtrlBoardMenuBuilder.DEVICEINFO_MENU:
+            return self.create_device_info_menu(context_object)
         else:
             print("Provided menu name [" + name + "] cannot be built!")
 
-    def create_scsi_id_list_menu(self):
+    def create_scsi_id_list_menu(self, context_object=None):
         devices = self._rascsi_client .list_devices()
         reserved_ids = self._rascsi_client .get_reserved_ids()
 
@@ -76,7 +79,7 @@ class CtrlBoardMenuBuilder(MenuBuilder):
         return menu
 
     # noinspection PyMethodMayBeStatic
-    def create_action_menu(self):
+    def create_action_menu(self, context_object=None):
         menu = Menu(CtrlBoardMenuBuilder.ACTION_MENU)
         menu.add_entry("Return", {"context": self.ACTION_MENU, "action": self.ACTION_RETURN})
         menu.add_entry("Attach/Insert", {"context": self.ACTION_MENU, "action": self.ACTION_SLOT_ATTACHINSERT})
@@ -86,7 +89,7 @@ class CtrlBoardMenuBuilder(MenuBuilder):
         menu.add_entry("Shutdown", {"context": self.ACTION_MENU, "action": self.ACTION_SHUTDOWN})
         return menu
 
-    def create_images_menu(self):
+    def create_images_menu(self, context_object=None):
         menu = Menu(CtrlBoardMenuBuilder.IMAGES_MENU)
         images_info = self._rascsi_client.get_image_files_info()
         menu.add_entry("Return", {"context": self.IMAGES_MENU, "action": self.ACTION_RETURN})
@@ -100,7 +103,7 @@ class CtrlBoardMenuBuilder(MenuBuilder):
 
         return menu
 
-    def create_profiles_menu(self):
+    def create_profiles_menu(self, context_object=None):
         menu = Menu(CtrlBoardMenuBuilder.PROFILES_MENU)
         menu.add_entry("Return", {"context": self.IMAGES_MENU, "action": self.ACTION_RETURN})
         file_tools = FileTools(rascsi_client=self._rascsi_client)
@@ -111,4 +114,49 @@ class CtrlBoardMenuBuilder(MenuBuilder):
                             "action": self.ACTION_LOADPROFILE})
 
         return menu
+
+    def create_device_info_menu(self, context_object=None):
+        menu = Menu(CtrlBoardMenuBuilder.DEVICEINFO_MENU)
+        menu.add_entry("Return", {"context": self.DEVICEINFO_MENU, "action": self.ACTION_RETURN})
+
+        device_info = self._rascsi_client.list_devices(context_object["scsi_id"])
+#        print(device_info)
+        if len(device_info["device_list"]) <= 0:
+            return menu
+
+        scsi_id = context_object["scsi_id"]
+        file = device_info["device_list"][0]["file"]
+        status = device_info["device_list"][0]["status"]
+        if len(status) <= 0:
+            status = "Read/Write"
+        lun = device_info["device_list"][0]["unit"]
+        device_type = device_info["device_list"][0]["device_type"]
+        if "parameters" in device_info["device_list"][0]:
+            parameters = device_info["device_list"][0]["parameters"]
+        else:
+            parameters = "{}"
+        vendor = device_info["device_list"][0]["vendor"]
+        product = device_info["device_list"][0]["product"]
+        revision = device_info["device_list"][0]["revision"]
+        block_size = device_info["device_list"][0]["block_size"]
+        image_size = device_info["device_list"][0]["size"]
+
+        menu.add_entry("ID   : " + str(scsi_id))
+        menu.add_entry("LUN  : " + str(lun))
+        menu.add_entry("File : " + str(file))
+        menu.add_entry("Type : " + str(device_type))
+        menu.add_entry("R/RW : " + str(status))
+        menu.add_entry("Prms : " + str(parameters))
+        menu.add_entry("Vndr : " + str(vendor))
+        menu.add_entry("Prdct: " + str(product))
+        menu.add_entry("Rvisn: " + str(revision))
+        menu.add_entry("Blksz: " + str(block_size))
+        menu.add_entry("Imgsz: " + str(image_size))
+
+        return menu
+
+
+# Status: Read-Only
+# File: /home/pi/images/cdroms/A4000-A5000 Standards.iso
+# Image Size: 375656448 bytes
 
