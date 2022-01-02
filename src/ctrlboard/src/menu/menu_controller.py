@@ -1,9 +1,12 @@
+import time
 from typing import Dict, Optional
 from menu.menu import Menu
 from menu.menu_builder import MenuBuilder
 from menu.menu_renderer import MenuRenderer
 from menu.menu_renderer_config import MenuRendererConfig
 import importlib
+
+from menu.transition import Transition
 
 
 class MenuController:
@@ -16,7 +19,7 @@ class MenuController:
         if self._menu_renderer is None:
             self._menu_renderer_config = MenuRendererConfig()
             self._menu_renderer = MenuRenderer(self._menu_renderer_config)
-        self._transition = None
+        self._transition: Optional[Transition] = None
         try:
             module = importlib.import_module("menu.transition")
             try:
@@ -30,6 +33,7 @@ class MenuController:
         except ImportError:
             print("transition module does not exist. Falling back to default.")
             self._transition = None
+        self._transition_menu_renderer = MenuRenderer(config=self._menu_renderer_config)
 
     def add(self, name: str, context_object=None):
         self._menus[name] = self._menu_builder.build(name)
@@ -53,6 +57,9 @@ class MenuController:
         if item_selection is not None:
             self._menus[name].item_selection = item_selection
 
+    def get_menu(self, name: str):
+        return self._menus[name]
+
     def get_active_menu(self):
         return self._active_menu
 
@@ -61,3 +68,20 @@ class MenuController:
 
     def get_rascsi_client(self):
         return self._menu_builder.get_rascsi_client()
+
+    def segue(self, name, context_object=None):
+        self.get_active_menu().context_object = None
+        self.refresh(name, context_object)
+
+        self._transition_menu_renderer.set_menu(self.get_menu(name))
+        self._transition_menu_renderer.render(display_on_device=False)
+        target_image = self._transition_menu_renderer.image
+        self._transition.perform(self._menu_renderer.image, target_image)
+        self.set_active_menu(name)
+
+    def show_message(self, message: str):
+        self.get_menu_renderer().message = message
+        self.get_menu_renderer().render()
+        time.sleep(1)
+        self.get_menu_renderer().message = ""
+

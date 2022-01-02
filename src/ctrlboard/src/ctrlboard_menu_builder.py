@@ -4,20 +4,28 @@ from rascsi_client import RaScsiClient
 
 
 class CtrlBoardMenuBuilder(MenuBuilder):
+    SCSI_ID_MENU = "scsi_id_menu"
+    ACTION_MENU = "action_menu"
+    IMAGES_MENU = "images_menu"
 
-    _SCSI_ID_MENU = "scsi_id_menu"
-    _ACTION_MENU = "action_menu"
-    _IMAGES_MENU = "images_menu"
+    ACTION_OPENACTIONMENU = "openactionmenu"
+    ACTION_RETURN = "return"
+    ACTION_SLOT_ATTACHINSERT = "slot_attachinsert"
+    ACTION_SLOT_DETACHEJECT = "slot_detacheject"
+    ACTION_SLOT_INFO = "slot_info"
+    ACTION_SHUTDOWN = "shutdown"
+    ACTION_LOADPROFILE = "loadprofile"
+    ACTION_IMAGE_ATTACHINSERT = "image_attachinsert"
 
     def __init__(self, rascsi_client: RaScsiClient):
         super().__init__(rascsi_client)
 
     def build(self, name: str) -> Menu:
-        if name == CtrlBoardMenuBuilder._SCSI_ID_MENU:
+        if name == CtrlBoardMenuBuilder.SCSI_ID_MENU:
             return self.create_scsi_id_list_menu()
-        elif name == CtrlBoardMenuBuilder._ACTION_MENU:
+        elif name == CtrlBoardMenuBuilder.ACTION_MENU:
             return self.create_action_menu()
-        elif name == CtrlBoardMenuBuilder._IMAGES_MENU:
+        elif name == CtrlBoardMenuBuilder.IMAGES_MENU:
             return self.create_images_menu()
         else:
             print("Provided menu name [" + name + "] cannot be built!")
@@ -30,7 +38,7 @@ class CtrlBoardMenuBuilder(MenuBuilder):
         for device in devices["device_list"]:
             devices_by_id[int(device["id"])] = device
 
-        menu = Menu(CtrlBoardMenuBuilder._SCSI_ID_MENU)
+        menu = Menu(CtrlBoardMenuBuilder.SCSI_ID_MENU)
 
         if reserved_ids["status"] is False:
             menu.add_entry("No scsi ids reserved")
@@ -57,33 +65,33 @@ class CtrlBoardMenuBuilder(MenuBuilder):
             if device_type != "":
                 menu_str += " [" + device_type + "]"
 
-            menu.add_entry(menu_str, {"context": "scsi_id_list_menu",
-                                      "action": "open_action_menu",
+            menu.add_entry(menu_str, {"context": self.SCSI_ID_MENU,
+                                      "action": self.ACTION_OPENACTIONMENU,
                                       "scsi_id": scsi_id})
 
         return menu
 
     # noinspection PyMethodMayBeStatic
     def create_action_menu(self):
-        menu = Menu(CtrlBoardMenuBuilder._ACTION_MENU)
-        menu.add_entry("Return", {"context": "action_menu", "action": "return"})
-        menu.add_entry("Attach/Insert", {"context": "action_menu", "action": "slot_command_attach_insert"})
-        menu.add_entry("Detach/Eject", {"context": "action_menu", "action": "slot_command_detach_eject"})
-        menu.add_entry("Info", {"context": "action_menu", "action": "slot_command_info"})
-        menu.add_entry("Load Profile", {"context": "action_menu", "action": "load_profile"})
-        menu.add_entry("General: Shutdown", {"context": "action_menu", "action": "shutdown"})
+        menu = Menu(CtrlBoardMenuBuilder.ACTION_MENU)
+        menu.add_entry("Return", {"context": self.ACTION_MENU, "action": self.ACTION_RETURN})
+        menu.add_entry("Attach/Insert", {"context": self.ACTION_MENU, "action": self.ACTION_SLOT_ATTACHINSERT})
+        menu.add_entry("Detach/Eject", {"context": self.ACTION_MENU, "action": self.ACTION_SLOT_DETACHEJECT})
+        menu.add_entry("Info", {"context": self.ACTION_MENU, "action": self.ACTION_SLOT_INFO})
+        menu.add_entry("Load Profile", {"context": self.ACTION_MENU, "action": self.ACTION_LOADPROFILE})
+        menu.add_entry("Shutdown", {"context": self.ACTION_MENU, "action": self.ACTION_SHUTDOWN})
         return menu
 
     def create_images_menu(self):
-        menu = Menu(CtrlBoardMenuBuilder._IMAGES_MENU)
+        menu = Menu(CtrlBoardMenuBuilder.IMAGES_MENU)
         images_info = self._rascsi_client.get_image_files_info()
-        menu.add_entry("Return", {"context": "images_menu", "action": "return"})
+        menu.add_entry("Return", {"context": self.IMAGES_MENU, "action": self.ACTION_RETURN})
         images = images_info["image_files"]
         device_types = self.get_rascsi_client().get_device_types()
         for image in images:
             menu.add_entry(str(image.name) + " [" + str(device_types["device_types"][int(image.type)-1]) + "]",
-                           {"context": "images_menu", "name": str(image.name),
+                           {"context": self.IMAGES_MENU, "name": str(image.name),
                             "device_type": str(device_types["device_types"][int(image.type)-1]),
-                            "action": "attach_insert"})
+                            "action": self.ACTION_IMAGE_ATTACHINSERT})
 
         return menu

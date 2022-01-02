@@ -1,5 +1,4 @@
-import time
-
+from ctrlboard_menu_builder import CtrlBoardMenuBuilder
 from menu.menu_controller import MenuController
 from ctrlboard_hw.hardware_button import HardwareButton
 from ctrlboard_hw.encoder import Encoder
@@ -17,15 +16,12 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
             if updated_object.name == "RotBtn":
                 menu = self._menu_controller.get_active_menu()
                 info_object = menu.get_current_info_object()
-                self.process_scsi_id_list_context_actions(info_object)
-                self.process_action_menu_actions(info_object)
-                self.process_images_menu_actions(info_object)
+
+                self.route_rotary_button_handler(info_object)
+
                 self._menu_controller.get_menu_renderer().render()
             else:
-                self._menu_controller.get_menu_renderer().message = updated_object.name + " pressed!"
-                self._menu_controller.get_menu_renderer().render()
-                time.sleep(1)
-                self._menu_controller.get_menu_renderer().message = ""
+                self._menu_controller.show_message(updated_object.name + " pressed!")
                 self._menu_controller.get_menu_renderer().render()
         if isinstance(updated_object, Encoder):
             # print(updatedObject.direction)
@@ -40,52 +36,58 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
                     active_menu.item_selection = 0
             self._menu_controller.get_menu_renderer().render()
 
-    def process_action_menu_actions(self, info_object):
-        if info_object["context"] == "action_menu":
-            if info_object["action"] == "return":
-                self.scsi_id_list_menu_segue()
-            if info_object["action"] == "slot_command_attach_insert":
-                context_object = self._menu_controller.get_active_menu().context_object
-                scsi_id = context_object["scsi_id"]
-                self.images_menu_segue(context_object=context_object)
-            if info_object["action"] == "slot_command_detach_eject":
-                self.detach_eject_scsi_id()
-                self.scsi_id_list_menu_segue()
-            if info_object["action"] == "slot_command_info":
-                print(self._menu_controller.get_active_menu().context_object)
-                self.scsi_id_list_menu_segue()
-            if info_object["action"] == "load_profile":
-                print(self._menu_controller.get_active_menu().context_object)
-                self.scsi_id_list_menu_segue()
-            if info_object["action"] == "shutdown":
-                print(self._menu_controller.get_active_menu().context_object)
-                self.scsi_id_list_menu_segue()
+    def route_rotary_button_handler(self, info_object):
+        context = info_object["context"]
+        action = info_object["action"]
+        handler_function_name = "handle_" + context + "_" + action
+        try:
+            handler_function = getattr(self, handler_function_name)
+            if handler_function is not None:
+                handler_function(info_object)
+        except AttributeError:
+            print("handler function [" + str(handler_function_name) + "] not found. Skipping.")
 
-    def process_scsi_id_list_context_actions(self, info_object):
-        if info_object["context"] == "scsi_id_list_menu":
-            if info_object["action"] == "open_action_menu":
-                context_object = self._menu_controller.get_active_menu().get_current_info_object()
-                self._menu_controller.set_active_menu("action_menu")
-                self._menu_controller.get_active_menu().context_object = context_object
+    def handle_scsi_id_menu_openactionmenu(self, info_object):
+        context_object = self._menu_controller.get_active_menu().get_current_info_object()
+        self._menu_controller.segue(CtrlBoardMenuBuilder.ACTION_MENU, context_object=context_object)
 
-    def process_images_menu_actions(self, info_object):
-        if info_object["context"] == "images_menu":
-            if info_object["action"] == "return":
-                self.action_menu_segue()
-            if info_object["action"] == "attach_insert":
-                self.attach_insert_scsi_id(info_object)
-                self.scsi_id_list_menu_segue()
+    def handle_action_menu_return(self, info_object):
+        self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU)
+
+    def handle_action_menu_slot_attachinsert(self, info_object):
+        context_object = self._menu_controller.get_active_menu().context_object
+        scsi_id = context_object["scsi_id"]
+        self._menu_controller.segue(CtrlBoardMenuBuilder.IMAGES_MENU, context_object=context_object)
+
+    def handle_action_menu_slot_detacheject(self, info_object):
+        self.detach_eject_scsi_id()
+        self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU)
+
+    def handle_action_menu_slot_info(self, info_object):
+        print(self._menu_controller.get_active_menu().context_object)
+        self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU)
+
+    def handle_action_menu_loadprofile(self, info_object):
+        print(self._menu_controller.get_active_menu().context_object)
+        self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU)
+
+    def handle_action_menu_shutdown(self, info_object):
+        print(self._menu_controller.get_active_menu().context_object)
+        self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU)
+
+    def handle_images_menu_return(self, info_object):
+        self._menu_controller.segue(CtrlBoardMenuBuilder.ACTION_MENU)
+
+    def handle_images_menu_image_attachinsert(self, info_object):
+        self.attach_insert_scsi_id(info_object)
+        self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU)
 
     def attach_insert_scsi_id(self, info_object):
         image_name = info_object["name"]
         device_type = info_object["device_type"]
         context_object = self._menu_controller.get_active_menu().context_object
         scsi_id = context_object["scsi_id"]
-        #print("attaching: " + image_name + " on scsi id: " + str(scsi_id))
         rascsi_client = self._menu_controller.get_rascsi_client()
-        #images_info = rascsi_client.get_image_files_info()
-        #print(images_info)
-        #print(device_type)
         rascsi_client.attach_image(scsi_id=scsi_id, device_type=device_type, image=image_name)
         self.show_id_action_message(scsi_id, "attached")
 
@@ -112,22 +114,5 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
             print("device type currently unhandled!")
 
     def show_id_action_message(self, scsi_id, action: str):
-        self._menu_controller.get_menu_renderer().message = "ID " + str(scsi_id) + " " + action + "!"
-        self._menu_controller.get_menu_renderer().render()
-        time.sleep(1)
-        self._menu_controller.get_menu_renderer().message = ""
+        self._menu_controller.show_message("ID " + str(scsi_id) + " " + action + "!")
 
-    def scsi_id_list_menu_segue(self, context_object=None):
-        self._menu_controller.get_active_menu().context_object = None
-        self._menu_controller.refresh("scsi_id_menu", context_object)
-        self._menu_controller.set_active_menu("scsi_id_menu")
-
-    def action_menu_segue(self, context_object=None):
-        self._menu_controller.get_active_menu().context_object = None
-        self._menu_controller.refresh("action_menu", context_object)
-        self._menu_controller.set_active_menu("action_menu")
-
-    def images_menu_segue(self, context_object=None):
-        self._menu_controller.get_active_menu().context_object = None
-        self._menu_controller.refresh("images_menu", context_object)
-        self._menu_controller.set_active_menu("images_menu")
