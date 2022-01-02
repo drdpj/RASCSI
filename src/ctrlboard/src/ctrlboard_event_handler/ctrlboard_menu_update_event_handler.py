@@ -97,7 +97,8 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
 
     # noinspection PyUnusedLocal
     def handle_action_menu_shutdown(self, info_object):
-        print(self._menu_controller.get_active_menu().context_object)
+        self._menu_controller.get_rascsi_client().shutdown_pi("system")
+        self._menu_controller.show_message("Shutting down!", 150)
         self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU,
                                     transition_attributes=MenuRendererConfig.transition_attributes_right)
 

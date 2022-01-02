@@ -79,7 +79,7 @@ class MenuController:
 
         self.set_active_menu(name)
 
-    def show_message(self, message: str):
+    def show_message(self, message: str, sleep=1):
         self.get_menu_renderer().message = message
         self.get_menu_renderer().render()
         time.sleep(1)
