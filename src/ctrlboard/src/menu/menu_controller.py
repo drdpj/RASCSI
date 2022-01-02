@@ -26,10 +26,8 @@ class MenuController:
                 transition_class = getattr(module, self._menu_renderer_config.transition)
                 if transition_class is not None:
                     self._transition = transition_class(self._menu_renderer.disp)
-
             except AttributeError:
-                print("transition [" + self._menu_renderer_config.transition + "] does not exist. Falling back to "
-                                                                               "default.")
+                pass
         except ImportError:
             print("transition module does not exist. Falling back to default.")
             self._transition = None
@@ -73,10 +71,12 @@ class MenuController:
         self.get_active_menu().context_object = None
         self.refresh(name, context_object)
 
-        self._transition_menu_renderer.set_menu(self.get_menu(name))
-        self._transition_menu_renderer.render(display_on_device=False)
-        target_image = self._transition_menu_renderer.image
-        self._transition.perform(self._menu_renderer.image, target_image)
+        if self._transition is not None:
+            self._transition_menu_renderer.set_menu(self.get_menu(name))
+            self._transition_menu_renderer.render(display_on_device=False)
+            target_image = self._transition_menu_renderer.image
+            self._transition.perform(self._menu_renderer.image, target_image)
+
         self.set_active_menu(name)
 
     def show_message(self, message: str):
