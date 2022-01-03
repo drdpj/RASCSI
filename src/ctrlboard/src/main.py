@@ -31,8 +31,14 @@ def main():
     # ctrlboard_hw.attach(print_event_handler)
 
     while True:
-        ctrlboard_hw.process_events()
-        menu_controller.update()
+        try:
+            ctrlboard_hw.process_events()
+            menu_controller.update()
+        except KeyboardInterrupt:
+            ctrlboard_hw.cleanup()
+            break
+        except Exception as e:
+            print(e)
 
 
 if __name__ == '__main__':

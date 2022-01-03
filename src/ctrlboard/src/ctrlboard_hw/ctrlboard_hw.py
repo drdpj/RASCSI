@@ -3,6 +3,7 @@ from ctrlboard_hw.hardware_button import HardwareButton
 from ctrlboard_hw.ctrlboard_hw_constants import CtrlBoardHardwareConstants
 from ctrlboard_hw.encoder import Encoder
 from observable import Observable
+import RPi.GPIO as GPIO
 
 
 class CtrlBoardHardware(Observable):
@@ -77,3 +78,7 @@ class CtrlBoardHardware(Observable):
         self.check_button_press(self.button2)
         self.check_button_press(self.button3)
         self.check_rotary_encoder(self.rotary)
+
+    @staticmethod
+    def cleanup():
+        GPIO.cleanup()
