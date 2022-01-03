@@ -85,3 +85,5 @@ class MenuController:
         time.sleep(1)
         self.get_menu_renderer().message = ""
 
+    def update(self):
+        self._menu_renderer.update()

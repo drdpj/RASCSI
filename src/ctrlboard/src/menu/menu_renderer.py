@@ -1,3 +1,6 @@
+import time
+from typing import Optional
+
 import busio
 import adafruit_ssd1306
 from PIL import Image
@@ -26,6 +29,11 @@ class MenuRenderer:
         font_width, self.font_height = self.font.getsize("ABCabc")  # just a sample text to work with the font height
         self.cursor_position = 0
         self.frame_start_row = 0
+        self.render_timestamp = None
+        self._perform_scrolling_stage = 0  # effectively a small state machine that deals with the scrolling
+        self._x_scrolling = 0
+        self._current_line_horizontal_overlap = None
+        self._stage_timestamp: Optional[int] = None
 
     def set_config(self, config: MenuRendererConfig):
         self._config = config
@@ -46,7 +54,54 @@ class MenuRenderer:
                 selection_extension = self._config.row_selection_pixel_extension
             self.draw.rectangle((x, y, self.disp.width, y+self._config.font_size+selection_extension), outline=0,
                                 fill=255)
-            self.draw.text((x, y), text, font=self.font, spacing=0, stroke_fill=0, fill=0)
+
+            # in stage 1, we initialize scrolling for the currently selected line
+            if self._perform_scrolling_stage == 1:
+                # print("stage 1")
+                self.setup_horizontal_scrolling(text)
+                # print("overlap: " + str(self._current_line_horizontal_overlap))
+                self._perform_scrolling_stage = 2  # don't repeat once the scrolling has started
+
+            # in stage 2, we know the details and can thus perform the scrolling to the left
+            if self._perform_scrolling_stage == 2:
+                # print("stage 2")
+                # print("sum: " + str(self._current_line_horizontal_overlap+self._x_scrolling))
+                if self._current_line_horizontal_overlap+self._x_scrolling > 0:
+                    self._x_scrolling -= 1
+                if self._current_line_horizontal_overlap+self._x_scrolling == 0:
+                    self._stage_timestamp = int(time.time())
+                    self._perform_scrolling_stage = 3
+
+            # in stage 3, we wait for a little when we have scrolled to the end of the text
+            if self._perform_scrolling_stage == 3:
+                # print("stage 3")
+                current_time = int(time.time())
+                time_diff = current_time - self._stage_timestamp
+                if time_diff >= int(self._config.scroll_line_end_delay):
+                    self._stage_timestamp = None
+                    self._perform_scrolling_stage = 4
+
+            # in stage 4, we scroll back to the right
+            if self._perform_scrolling_stage == 4:
+                # print("stage 4")
+                # print("sum: " + str(self._current_line_horizontal_overlap+self._x_scrolling))
+
+                if self._current_line_horizontal_overlap+self._x_scrolling >= 0:
+                    self._x_scrolling += 1
+                if self._current_line_horizontal_overlap+self._x_scrolling == self._current_line_horizontal_overlap:
+                    self._stage_timestamp = int(time.time())
+                    self._perform_scrolling_stage = 5
+
+            # in stage 5, we wait again for a little while before we start again
+            if self._perform_scrolling_stage == 5:
+                # print("stage 5")
+                current_time = int(time.time())
+                time_diff = current_time - self._stage_timestamp
+                if time_diff >= int(self._config.scroll_line_end_delay):
+                    self._stage_timestamp = None
+                    self._perform_scrolling_stage = 2
+
+            self.draw.text((x+self._x_scrolling, y), text, font=self.font, spacing=0, stroke_fill=0, fill=0)
         else:
             self.draw.text((x, y), text, font=self.font, spacing=0, stroke_fill=0, fill=255)
 
@@ -97,6 +152,10 @@ class MenuRenderer:
                 break
 
     def render(self, display_on_device=True):
+        self._perform_scrolling_stage = 0
+        self._current_line_horizontal_overlap = None
+        self._x_scrolling = 0
+
         if self._menu is None:
             self.draw_fullsceen_message("No menu set!")
             self.disp.image(self.image)
@@ -117,4 +176,27 @@ class MenuRenderer:
         if display_on_device is True:
             self.disp.show()
 
+        self.render_timestamp = int(time.time())
+
         return self.image
+
+    def setup_horizontal_scrolling(self, text):
+        font_width, font_height = self.font.getsize(text)
+        self._current_line_horizontal_overlap = font_width - self.disp.width
+
+    def update(self):
+        if self._config.scroll_line is False:
+            return
+
+        current_time = int(time.time())
+        time_diff = current_time - self.render_timestamp
+
+        if time_diff >= self._config.scroll_delay:
+            if self._perform_scrolling_stage == 0:
+                self._perform_scrolling_stage = 1
+            self.draw_menu()
+            self.disp.image(self.image)
+            self.disp.show()
+
+
+

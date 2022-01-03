@@ -13,3 +13,7 @@ class MenuRendererConfig:
     transition_attributes_left = {"direction": "push_left"}
     transition_attributes_right = {"direction": "push_right"}
     transition_speed = 20
+    scroll_line = True
+    scroll_delay = 3
+    scroll_line_end_delay = 2
+    screensaver_delay = 60

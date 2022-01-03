@@ -32,6 +32,7 @@ def main():
 
     while True:
         ctrlboard_hw.process_events()
+        menu_controller.update()
 
 
 if __name__ == '__main__':
