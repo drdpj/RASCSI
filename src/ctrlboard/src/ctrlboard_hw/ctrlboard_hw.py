@@ -26,7 +26,7 @@ class CtrlBoardHardware(Observable):
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(CtrlBoardHardwareConstants.PI_PIN_INTERRUPT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(CtrlBoardHardwareConstants.PI_PIN_INTERRUPT, GPIO.FALLING,
-                              callback=self.button_pressed_callback, bouncetime=1)
+                              callback=self.button_pressed_callback, bouncetime=-666)
 
         # # configure button of the rotary encoder
         self.rotary_button = HardwareButton(self.pca_driver, CtrlBoardHardwareConstants.PCA9554_PIN_BUTTON_ROTARY)
