@@ -1,3 +1,5 @@
+import time
+
 from ctrlboard_hw.ctrlboard_hw import CtrlBoardHardware
 from ctrlboard_hw.ctrlboard_hw_constants import CtrlBoardHardwareConstants
 from ctrlboard_event_handler.ctrlboard_menu_update_event_handler import CtrlBoardMenuUpdateEventHandler

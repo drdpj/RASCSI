@@ -4,50 +4,58 @@ from ctrlboard_hw.ctrlboard_hw_constants import CtrlBoardHardwareConstants
 from ctrlboard_hw.encoder import Encoder
 from observable import Observable
 import RPi.GPIO as GPIO
+import numpy
 
 
 class CtrlBoardHardware(Observable):
 
     def __init__(self):
-        pca_driver = pca9554.Pca9554(CtrlBoardHardwareConstants.PCA9554_I2C_ADDRESS)
+        self.pos = 0
+        self.pca_driver = pca9554.Pca9554(CtrlBoardHardwareConstants.PCA9554_I2C_ADDRESS)
         # setup pca9554
-        pca_driver.write_config_port(CtrlBoardHardwareConstants.PCA9554_PIN_ENC_A, pca9554.INPUT)
-        pca_driver.write_config_port(CtrlBoardHardwareConstants.PCA9554_PIN_ENC_B, pca9554.INPUT)
-        pca_driver.write_config_port(CtrlBoardHardwareConstants.PCA9554_PIN_BUTTON_1, pca9554.INPUT)
-        pca_driver.write_config_port(CtrlBoardHardwareConstants.PCA9554_PIN_BUTTON_2, pca9554.INPUT)
-        pca_driver.write_config_port(CtrlBoardHardwareConstants.PCA9554_PIN_BUTTON_3, pca9554.INPUT)
-        pca_driver.write_config_port(CtrlBoardHardwareConstants.PCA9554_PIN_BUTTON_ROTARY, pca9554.INPUT)
-        pca_driver.write_config_port(CtrlBoardHardwareConstants.PCA9554_PIN_LED_1, pca9554.OUTPUT)
-        pca_driver.write_config_port(CtrlBoardHardwareConstants.PCA9554_PIN_LED_2, pca9554.OUTPUT)
+        self.pca_driver.write_config_port(CtrlBoardHardwareConstants.PCA9554_PIN_ENC_A, pca9554.INPUT)
+        self.pca_driver.write_config_port(CtrlBoardHardwareConstants.PCA9554_PIN_ENC_B, pca9554.INPUT)
+        self.pca_driver.write_config_port(CtrlBoardHardwareConstants.PCA9554_PIN_BUTTON_1, pca9554.INPUT)
+        self.pca_driver.write_config_port(CtrlBoardHardwareConstants.PCA9554_PIN_BUTTON_2, pca9554.INPUT)
+        self.pca_driver.write_config_port(CtrlBoardHardwareConstants.PCA9554_PIN_BUTTON_3, pca9554.INPUT)
+        self.pca_driver.write_config_port(CtrlBoardHardwareConstants.PCA9554_PIN_BUTTON_ROTARY, pca9554.INPUT)
+        self.pca_driver.write_config_port(CtrlBoardHardwareConstants.PCA9554_PIN_LED_1, pca9554.OUTPUT)
+        self.pca_driver.write_config_port(CtrlBoardHardwareConstants.PCA9554_PIN_LED_2, pca9554.OUTPUT)
+        self.input_register_buffer = numpy.uint32(0)
 
-        # configure button of the rotary encoder
-        self.rotary_button = HardwareButton(pca_driver, CtrlBoardHardwareConstants.PCA9554_PIN_BUTTON_ROTARY)
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(CtrlBoardHardwareConstants.PI_PIN_INTERRUPT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.add_event_detect(CtrlBoardHardwareConstants.PI_PIN_INTERRUPT, GPIO.FALLING,
+                              callback=self.button_pressed_callback, bouncetime=1)
+
+        # # configure button of the rotary encoder
+        self.rotary_button = HardwareButton(self.pca_driver, CtrlBoardHardwareConstants.PCA9554_PIN_BUTTON_ROTARY)
         self.rotary_button.state = True
         self.rotary_button.name = CtrlBoardHardwareConstants.ROTARY_BUTTON
 
         # configure button 1
-        self.button1 = HardwareButton(pca_driver, CtrlBoardHardwareConstants.PCA9554_PIN_BUTTON_1)
+        self.button1 = HardwareButton(self.pca_driver, CtrlBoardHardwareConstants.PCA9554_PIN_BUTTON_1)
         self.button1.state = True
         self.button1.name = CtrlBoardHardwareConstants.BUTTON_1
 
         # configure button 2
-        self.button2 = HardwareButton(pca_driver, CtrlBoardHardwareConstants.PCA9554_PIN_BUTTON_2)
+        self.button2 = HardwareButton(self.pca_driver, CtrlBoardHardwareConstants.PCA9554_PIN_BUTTON_2)
         self.button2.state = True
         self.button2.name = CtrlBoardHardwareConstants.BUTTON_2
 
         # configure button 3
-        self.button3 = HardwareButton(pca_driver, CtrlBoardHardwareConstants.PCA9554_PIN_BUTTON_3)
+        self.button3 = HardwareButton(self.pca_driver, CtrlBoardHardwareConstants.PCA9554_PIN_BUTTON_3)
         self.button3.state = True
         self.button3.name = CtrlBoardHardwareConstants.BUTTON_3
 
         # configure rotary encoder pin a
-        self.rotary_a = HardwareButton(pca_driver, CtrlBoardHardwareConstants.PCA9554_PIN_ENC_A)
+        self.rotary_a = HardwareButton(self.pca_driver, CtrlBoardHardwareConstants.PCA9554_PIN_ENC_A)
         self.rotary_a.state = True
         self.rotary_a.directionalTransition = False
         self.rotary_a.name = CtrlBoardHardwareConstants.ROTARY_A
 
         # configure rotary encoder pin b
-        self.rotary_b = HardwareButton(pca_driver, CtrlBoardHardwareConstants.PCA9554_PIN_ENC_B)
+        self.rotary_b = HardwareButton(self.pca_driver, CtrlBoardHardwareConstants.PCA9554_PIN_ENC_B)
         self.rotary_b.state = True
         self.rotary_b.directionalTransition = False
         self.rotary_b.name = CtrlBoardHardwareConstants.ROTARY_B
@@ -57,27 +65,76 @@ class CtrlBoardHardware(Observable):
         self.rotary.pos_prev = 0
         self.rotary.name = CtrlBoardHardwareConstants.ROTARY
 
+    def button_pressed_callback(self, channel):
+        self.input_register_buffer <<= 8
+        self.input_register_buffer |= self.pca_driver.read_input_register()
+
     def check_button_press(self, button):
-        value = button.read()
-        if value != button.state and value == 0:
+        if button.state_interrupt is True:
+            return
+
+        value = button.state_interrupt
+
+        if value != button.state and value is False:
             button.state = False
             self.notify(button)
-        if value != button.state and value == 1:
+            # print("button press: " + str(button))
             button.state = True
+            button.state_interrupt = True
 
     def check_rotary_encoder(self, rotary):
         rotary.update()
         if self.rotary.pos_prev != self.rotary.pos:
-            if (self.rotary.pos / 4) % 1 == 0:
-                self.notify(rotary)
+            self.notify(rotary)
             self.rotary.pos_prev = self.rotary.pos
 
+    # noinspection PyMethodMayBeStatic
+    def button_value(self, input_register_buffer, bit):
+        input_register_buffer_length = int(len(format(input_register_buffer, 'b'))/8)
+        shiftval = (input_register_buffer_length-1)*8
+        tmp = input_register_buffer >> shiftval
+        bitmask = 1 << bit
+        tmp &= bitmask
+        tmp >>= bit
+        return tmp
+
     def process_events(self):
+        input_register_buffer_length = int(len(format(self.input_register_buffer, 'b'))/8)
+        if input_register_buffer_length <= 1:
+            return
+
+        rot_a = self.button_value(self.input_register_buffer, 0)
+        rot_b = self.button_value(self.input_register_buffer, 1)
+        button_rotary = self.button_value(self.input_register_buffer, 5)
+        button_1 = self.button_value(self.input_register_buffer, 2)
+        button_2 = self.button_value(self.input_register_buffer, 3)
+        button_3 = self.button_value(self.input_register_buffer, 4)
+
+        if button_1 == 0:
+            self.button1.state_interrupt = bool(button_1)
+
+        if button_2 == 0:
+            self.button2.state_interrupt = bool(button_2)
+
+        if button_3 == 0:
+            self.button3.state_interrupt = bool(button_3)
+
+        if button_rotary == 0:
+            self.rotary_button.state_interrupt = bool(button_rotary)
+
+        if rot_a == 0:
+            self.rotary.enc_a.state_interrupt = bool(rot_a)
+
+        if rot_b == 0:
+            self.rotary.enc_b.state_interrupt = bool(rot_b)
+
         self.check_button_press(self.rotary_button)
         self.check_button_press(self.button1)
         self.check_button_press(self.button2)
         self.check_button_press(self.button3)
         self.check_rotary_encoder(self.rotary)
+
+        self.input_register_buffer = 0
 
     @staticmethod
     def cleanup():
