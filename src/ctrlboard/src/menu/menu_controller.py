@@ -11,13 +11,16 @@ from menu.transition import Transition
 
 class MenuController:
 
-    def __init__(self, menu_builder: MenuBuilder, menu_renderer=None):
+    def __init__(self, menu_builder: MenuBuilder, menu_renderer=None, menu_renderer_config=None):
         self._menus: Dict[str, Menu] = {}
         self._active_menu: Optional[Menu] = None
         self._menu_renderer = menu_renderer
         self._menu_builder: MenuBuilder = menu_builder
         if self._menu_renderer is None:
-            self._menu_renderer_config = MenuRendererConfig()
+            if menu_renderer_config is None:
+                self._menu_renderer_config = MenuRendererConfig()
+            else:
+                self._menu_renderer_config = menu_renderer_config
             self._menu_renderer = MenuRenderer(self._menu_renderer_config)
         self._transition: Optional[Transition] = None
         try:

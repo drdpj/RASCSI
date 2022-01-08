@@ -154,9 +154,3 @@ class CtrlBoardMenuBuilder(MenuBuilder):
         menu.add_entry("Imgsz: " + str(image_size))
 
         return menu
-
-
-# Status: Read-Only
-# File: /home/pi/images/cdroms/A4000-A5000 Standards.iso
-# Image Size: 375656448 bytes
-

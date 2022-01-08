@@ -3,6 +3,7 @@ from ctrlboard_hw.hardware_button import HardwareButton
 from ctrlboard_hw.ctrlboard_hw_constants import CtrlBoardHardwareConstants
 from ctrlboard_hw.encoder import Encoder
 from observable import Observable
+# noinspection PyUnresolvedReferences
 import RPi.GPIO as GPIO
 import numpy
 
@@ -65,6 +66,7 @@ class CtrlBoardHardware(Observable):
         self.rotary.pos_prev = 0
         self.rotary.name = CtrlBoardHardwareConstants.ROTARY
 
+    # noinspection PyUnusedLocal
     def button_pressed_callback(self, channel):
         self.input_register_buffer <<= 8
         self.input_register_buffer |= self.pca_driver.read_input_register()

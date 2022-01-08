@@ -4,7 +4,6 @@ from file_cmds import FileTools
 from menu.menu_controller import MenuController
 from ctrlboard_hw.hardware_button import HardwareButton
 from ctrlboard_hw.encoder import Encoder
-from menu.menu_renderer_config import MenuRendererConfig
 from observer import Observer
 
 
@@ -13,6 +12,7 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
     def __init__(self, menu_controller: MenuController):
         self.message = None
         self._menu_controller = menu_controller
+        self._menu_renderer_config = self._menu_controller.get_menu_renderer().get_config()
 
     def update(self, updated_object):
         if isinstance(updated_object, HardwareButton):
@@ -57,19 +57,19 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
     def handle_scsi_id_menu_openactionmenu(self, info_object):
         context_object = self._menu_controller.get_active_menu().get_current_info_object()
         self._menu_controller.segue(CtrlBoardMenuBuilder.ACTION_MENU, context_object=context_object,
-                                    transition_attributes=MenuRendererConfig.transition_attributes_left)
+                                    transition_attributes=self._menu_renderer_config.transition_attributes_left)
 
     # noinspection PyUnusedLocal
     def handle_action_menu_return(self, info_object):
         self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU,
-                                    transition_attributes=MenuRendererConfig.transition_attributes_right)
+                                    transition_attributes=self._menu_renderer_config.transition_attributes_right)
 
     # noinspection PyUnusedLocal
     def handle_action_menu_slot_attachinsert(self, info_object):
         context_object = self._menu_controller.get_active_menu().context_object
         scsi_id = context_object["scsi_id"]
         self._menu_controller.segue(CtrlBoardMenuBuilder.IMAGES_MENU, context_object=context_object,
-                                    transition_attributes=MenuRendererConfig.transition_attributes_left)
+                                    transition_attributes=self._menu_renderer_config.transition_attributes_left)
 
     # noinspection PyUnusedLocal
     def handle_action_menu_slot_detacheject(self, info_object):
@@ -81,19 +81,19 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
     def handle_action_menu_slot_info(self, info_object):
         context_object = self._menu_controller.get_active_menu().context_object
         self._menu_controller.segue(CtrlBoardMenuBuilder.DEVICEINFO_MENU,
-                                    transition_attributes=MenuRendererConfig.transition_attributes_left,
+                                    transition_attributes=self._menu_renderer_config.transition_attributes_left,
                                     context_object=context_object)
 
     # noinspection PyUnusedLocal
     def handle_device_info_menu_return(self, info_object):
         context_object = self._menu_controller.get_active_menu().context_object
         self._menu_controller.segue(CtrlBoardMenuBuilder.ACTION_MENU,
-                                    transition_attributes=MenuRendererConfig.transition_attributes_right, context_object=context_object)
+                                    transition_attributes=self._menu_renderer_config.transition_attributes_right, context_object=context_object)
 
     # noinspection PyUnusedLocal
     def handle_action_menu_loadprofile(self, info_object):
         self._menu_controller.segue(CtrlBoardMenuBuilder.PROFILES_MENU,
-                                    transition_attributes=MenuRendererConfig.transition_attributes_left)
+                                    transition_attributes=self._menu_renderer_config.transition_attributes_left)
 
     # noinspection PyUnusedLocal
     def handle_profiles_menu_loadprofile(self, info_object):
@@ -103,19 +103,19 @@ class CtrlBoardMenuUpdateEventHandler(Observer):
             self._menu_controller.show_message("Profile loaded!")
 
         self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU,
-                                    transition_attributes=MenuRendererConfig.transition_attributes_left)
+                                    transition_attributes=self._menu_renderer_config.transition_attributes_left)
 
     # noinspection PyUnusedLocal
     def handle_action_menu_shutdown(self, info_object):
         self._menu_controller.get_rascsi_client().shutdown_pi("system")
         self._menu_controller.show_message("Shutting down!", 150)
         self._menu_controller.segue(CtrlBoardMenuBuilder.SCSI_ID_MENU,
-                                    transition_attributes=MenuRendererConfig.transition_attributes_right)
+                                    transition_attributes=self._menu_renderer_config.transition_attributes_right)
 
     # noinspection PyUnusedLocal
     def handle_images_menu_return(self, info_object):
         self._menu_controller.segue(CtrlBoardMenuBuilder.ACTION_MENU,
-                                    transition_attributes=MenuRendererConfig.transition_attributes_right)
+                                    transition_attributes=self._menu_renderer_config.transition_attributes_right)
 
     def handle_images_menu_image_attachinsert(self, info_object):
         self.attach_insert_scsi_id(info_object)

@@ -18,9 +18,10 @@ class MenuRenderer:
     def __init__(self, config: MenuRendererConfig):
         self.message = ""
         self._menu = None
-        self._config = MenuRendererConfig()
+        self._config = config
         i2c = busio.I2C(SCL, SDA)
         self.disp = adafruit_ssd1306.SSD1306_I2C(config.width, config.height, i2c, addr=config.ssd1306_i2c_address)
+        self.disp.rotation = config.get_mapped_rotation()
         self.disp.fill(0)
         self.disp.show()
         self.image = Image.new('1', (self.disp.width, self.disp.height))
@@ -37,6 +38,9 @@ class MenuRenderer:
 
     def set_config(self, config: MenuRendererConfig):
         self._config = config
+
+    def get_config(self):
+        return self._config
 
     def set_menu(self, menu: Menu):
         self._menu = menu
