@@ -25,9 +25,10 @@ class CtrlBoardHardware(Observable):
         self.input_register_buffer = numpy.uint32(0)
 
         GPIO.setmode(GPIO.BCM)
-        GPIO.setup(CtrlBoardHardwareConstants.PI_PIN_INTERRUPT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        # GPIO.setup(CtrlBoardHardwareConstants.PI_PIN_INTERRUPT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(CtrlBoardHardwareConstants.PI_PIN_INTERRUPT, GPIO.IN)  # stronger hardware pull-up
         GPIO.add_event_detect(CtrlBoardHardwareConstants.PI_PIN_INTERRUPT, GPIO.FALLING,
-                              callback=self.button_pressed_callback, bouncetime=-666)
+                              callback=self.button_pressed_callback)
 
         # # configure button of the rotary encoder
         self.rotary_button = HardwareButton(self.pca_driver, CtrlBoardHardwareConstants.PCA9554_PIN_BUTTON_ROTARY)
@@ -68,8 +69,11 @@ class CtrlBoardHardware(Observable):
 
     # noinspection PyUnusedLocal
     def button_pressed_callback(self, channel):
+        # self.last_interrupt_time = time.perf_counter_ns()
+        input_register = self.pca_driver.read_input_register()
+        # print(format(input_register, 'b'))
         self.input_register_buffer <<= 8
-        self.input_register_buffer |= self.pca_driver.read_input_register()
+        self.input_register_buffer |= input_register
 
     def check_button_press(self, button):
         if button.state_interrupt is True:
@@ -92,6 +96,14 @@ class CtrlBoardHardware(Observable):
 
     # noinspection PyMethodMayBeStatic
     def button_value(self, input_register_buffer, bit):
+        tmp = input_register_buffer
+        bitmask = 1 << bit
+        tmp &= bitmask
+        tmp >>= bit
+        return tmp
+
+    # noinspection PyMethodMayBeStatic
+    def button_value_shifted_list(self, input_register_buffer, bit):
         input_register_buffer_length = int(len(format(input_register_buffer, 'b'))/8)
         shiftval = (input_register_buffer_length-1)*8
         tmp = input_register_buffer >> shiftval
@@ -105,37 +117,45 @@ class CtrlBoardHardware(Observable):
         if input_register_buffer_length <= 1:
             return
 
-        rot_a = self.button_value(self.input_register_buffer, 0)
-        rot_b = self.button_value(self.input_register_buffer, 1)
-        button_rotary = self.button_value(self.input_register_buffer, 5)
-        button_1 = self.button_value(self.input_register_buffer, 2)
-        button_2 = self.button_value(self.input_register_buffer, 3)
-        button_3 = self.button_value(self.input_register_buffer, 4)
+        input_register_buffer = self.input_register_buffer
+        self.input_register_buffer = 0
 
-        if button_1 == 0:
-            self.button1.state_interrupt = bool(button_1)
+        for i in range(0, input_register_buffer_length):
+            shiftval = (input_register_buffer_length-1-i)*8
+            input_register = (input_register_buffer >> shiftval) & 0b11111111
 
-        if button_2 == 0:
-            self.button2.state_interrupt = bool(button_2)
+            rot_a = self.button_value(input_register, 0)
+            rot_b = self.button_value(input_register, 1)
+            button_rotary = self.button_value(input_register, 5)
+            button_1 = self.button_value(input_register, 2)
+            button_2 = self.button_value(input_register, 3)
+            button_3 = self.button_value(input_register, 4)
 
-        if button_3 == 0:
-            self.button3.state_interrupt = bool(button_3)
+            if button_1 == 0:
+                self.button1.state_interrupt = bool(button_1)
 
-        if button_rotary == 0:
-            self.rotary_button.state_interrupt = bool(button_rotary)
+            if button_2 == 0:
+                self.button2.state_interrupt = bool(button_2)
 
-        if rot_a == 0:
-            self.rotary.enc_a.state_interrupt = bool(rot_a)
+            if button_3 == 0:
+                self.button3.state_interrupt = bool(button_3)
 
-        if rot_b == 0:
-            self.rotary.enc_b.state_interrupt = bool(rot_b)
+            if button_rotary == 0:
+                self.rotary_button.state_interrupt = bool(button_rotary)
 
-        self.check_button_press(self.rotary_button)
-        self.check_button_press(self.button1)
-        self.check_button_press(self.button2)
-        self.check_button_press(self.button3)
-        self.check_rotary_encoder(self.rotary)
+            if rot_a == 0:
+                self.rotary.enc_a.state_interrupt = bool(rot_a)
 
+            if rot_b == 0:
+                self.rotary.enc_b.state_interrupt = bool(rot_b)
+
+            self.check_button_press(self.rotary_button)
+            self.check_button_press(self.button1)
+            self.check_button_press(self.button2)
+            self.check_button_press(self.button3)
+            self.check_rotary_encoder(self.rotary)
+
+        self.rotary.state = 0b11
         self.input_register_buffer = 0
 
     @staticmethod
