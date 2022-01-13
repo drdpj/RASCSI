@@ -11,13 +11,14 @@ class MenuRendererConfig:
         self.width = 128
         self.height = 64
         self.ssd1306_i2c_address = 0x3c
+        self.display_type = "sh1106"
         #    self.font_path = 'resources/SourceCodePro-Bold.ttf'
         self.font_path = 'resources/DejaVuSansMono-Bold.ttf'
         self.font_size = 12
         self.row_selection_pixel_extension = 2
         self.scroll_behavior = "page"  # "extend" or "page"
-        #    self.croll_behavior = "extend"  # "extend" or "page"
-        #    self.transition = "PushTransition"
+        #    self.scroll_behavior = "extend"  # "extend" or "page"
+#        self.transition = "PushTransition"
         self.transition = "None"
         self.transition_attributes_left = {"direction": "push_left"}
         self.transition_attributes_right = {"direction": "push_right"}

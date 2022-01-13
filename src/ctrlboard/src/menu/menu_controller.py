@@ -1,8 +1,10 @@
 import time
+from copy import deepcopy
 from typing import Dict, Optional
 from menu.menu import Menu
 from menu.menu_builder import MenuBuilder
 from menu.menu_renderer import MenuRenderer
+from menu.menu_renderer_adafruit_ssd1306 import MenuRendererAdafruitSSD1306
 from menu.menu_renderer_config import MenuRendererConfig
 import importlib
 
@@ -16,12 +18,16 @@ class MenuController:
         self._active_menu: Optional[Menu] = None
         self._menu_renderer = menu_renderer
         self._menu_builder: MenuBuilder = menu_builder
-        if self._menu_renderer is None:
-            if menu_renderer_config is None:
-                self._menu_renderer_config = MenuRendererConfig()
-            else:
-                self._menu_renderer_config = menu_renderer_config
+        self._menu_renderer_config = None
+        if menu_renderer_config is None:
+            self._menu_renderer_config = MenuRendererConfig()
+        else:
+            self._menu_renderer_config = menu_renderer_config
+
+        if menu_renderer is None:
             self._menu_renderer = MenuRenderer(self._menu_renderer_config)
+        else:
+            self._menu_renderer = menu_renderer
         self._transition: Optional[Transition] = None
         try:
             module = importlib.import_module("menu.transition")
@@ -34,7 +40,11 @@ class MenuController:
         except ImportError:
             print("transition module does not exist. Falling back to default.")
             self._transition = None
-        self._transition_menu_renderer = MenuRenderer(config=self._menu_renderer_config)
+
+        # TODO: disabled. transitions don't work currently.
+        # self._transition_menu_renderer = deepcopy(self)
+        # self._transition_menu_renderer = MenuRenderer(config=self._menu_renderer_config)
+        # self._transition_menu_renderer = MenuRendererAdafruitSSD1306(config=self._menu_renderer_config)
 
     def add(self, name: str, context_object=None):
         self._menus[name] = self._menu_builder.build(name)

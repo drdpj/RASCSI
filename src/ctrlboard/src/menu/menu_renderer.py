@@ -1,29 +1,25 @@
 import time
+from abc import abstractmethod
 from typing import Optional
-
-import busio
-import adafruit_ssd1306
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
-from board import SCL, SDA
 from menu.menu import Menu
 from menu.menu_renderer_config import MenuRendererConfig
 import math
 import itertools
+from abc import ABC, abstractmethod
 
 
-class MenuRenderer:
+class MenuRenderer(ABC):
 
     def __init__(self, config: MenuRendererConfig):
         self.message = ""
         self._menu = None
         self._config = config
-        i2c = busio.I2C(SCL, SDA)
-        self.disp = adafruit_ssd1306.SSD1306_I2C(config.width, config.height, i2c, addr=config.ssd1306_i2c_address)
-        self.disp.rotation = config.get_mapped_rotation()
-        self.disp.fill(0)
-        self.disp.show()
+
+        self.disp = self.display_init()
+
         self.image = Image.new('1', (self.disp.width, self.disp.height))
         self.draw = ImageDraw.Draw(self.image)
         self.font = ImageFont.truetype(config.font_path, size=config.font_size)
@@ -35,6 +31,22 @@ class MenuRenderer:
         self._x_scrolling = 0
         self._current_line_horizontal_overlap = None
         self._stage_timestamp: Optional[int] = None
+
+    @abstractmethod
+    def display_init(self):
+        pass
+
+    @abstractmethod
+    def display_clear(self):
+        pass
+
+    @abstractmethod
+    def update_display_image(self, image):
+        pass
+
+    @abstractmethod
+    def update_display(self):
+        pass
 
     def set_config(self, config: MenuRendererConfig):
         self._config = config
@@ -168,17 +180,17 @@ class MenuRenderer:
                 self.disp.show()
             return
 
-        self.disp.fill(0)
+        self.display_clear()
 
         if self.message != "":
             self.draw_fullsceen_message(self.message)
         else:
             self.draw_menu()
 
-        self.disp.image(self.image)
+        self.update_display_image(self.image)
 
         if display_on_device is True:
-            self.disp.show()
+            self.update_display()
 
         self.render_timestamp = int(time.time())
 
@@ -199,8 +211,7 @@ class MenuRenderer:
             if self._perform_scrolling_stage == 0:
                 self._perform_scrolling_stage = 1
             self.draw_menu()
-            self.disp.image(self.image)
-            self.disp.show()
+            self.update_display_image(self.image)
 
 
 
