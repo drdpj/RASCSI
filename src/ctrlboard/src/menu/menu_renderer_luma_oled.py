@@ -9,11 +9,8 @@ class MenuRendererLumaOled(MenuRenderer):
         import luma.oled.device
         device = getattr(luma.oled.device, self._config.display_type)
 
-        self.disp = device(serial_interface=serial,
+        self.disp = device(serial_interface=serial, width=self._config.width, height=self._config.height,
                            rotate=self._config.get_mapped_rotation())
-
-        print("Detected screen width: " + str(self.disp.width))
-        print("Detected screen height: " + str(self.disp.height))
 
         self.disp.clear()
         self.disp.show()
