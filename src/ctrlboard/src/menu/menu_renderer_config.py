@@ -8,10 +8,12 @@ class MenuRendererConfig:
     }
 
     def __init__(self):
-        self.width = 128
-        self.height = 64
-        self.ssd1306_i2c_address = 0x3c
-        self.display_type = "sh1106"
+        self.width = 128  # ignored for luma_oled due to autodetection
+        self.height = 64  # ignored for luma_oled due to autodetection
+        self.i2c_address = 0x3c
+        self.i2c_port = 1
+#        self.display_type = "sh1106"
+        self.display_type = "ssd1306"
         #    self.font_path = 'resources/SourceCodePro-Bold.ttf'
         self.font_path = 'resources/DejaVuSansMono-Bold.ttf'
         self.font_size = 12
@@ -27,7 +29,7 @@ class MenuRendererConfig:
         self.scroll_delay = 3
         self.scroll_line_end_delay = 2
         self.screensaver_delay = 60
-        self.rotation = 0  # degrees. Options: 0, 180
+        self.rotation = 180  # degrees. Options: 0, 180
 
     def get_mapped_rotation(self):
         return self._rotation_mapper[self.rotation]
