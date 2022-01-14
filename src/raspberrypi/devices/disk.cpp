@@ -68,6 +68,10 @@ Disk::Disk(const std::string id) : Device(id), ScsiPrimaryCommands(), ScsiBlockC
 	AddCommand(SCSIDEV::eCmdVerify16, "Verify16", &Disk::Verify16);
 	AddCommand(SCSIDEV::eCmdReadCapacity16_ReadLong16, "ReadCapacity16/ReadLong16", &Disk::ReadCapacity16_ReadLong16);
 	AddCommand(SCSIDEV::eCmdReportLuns, "ReportLuns", &Disk::ReportLuns);
+	AddCommand(SCSIDEV::eCmdSetDriveParams, "SetDriveParams", &Disk::SetDriveParams);
+	AddCommand(SCSIDEV::eCmdRamDiagnostics, "RamDiagnostics", &Disk::RamDiagnostics);
+	AddCommand(SCSIDEV::eCmdDriveDiagnostics, "DriveDiagnostics", &Disk::DriveDiagnostics);
+	AddCommand(SCSIDEV::eCmdCntrlDiagnostics, "ControllerDiagnostics", &Disk::CntrlDiagnostics);
 }
 
 Disk::~Disk()
