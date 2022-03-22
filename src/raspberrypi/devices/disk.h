@@ -113,6 +113,10 @@ public:
 	void ReadCapacity10(SASIDEV *) override;
 	void ReadCapacity16(SASIDEV *) override;
 	void ReportLuns(SASIDEV *) override;
+	void SetDriveParams(SASIDEV *);
+	void RamDiagnostics(SASIDEV *);
+	void DriveDiagnostics(SASIDEV *);
+	void ControllerDiagnostics(SASIDEV *);
 	void Reserve6(SASIDEV *);
 	void Reserve10(SASIDEV *);
 	void Release6(SASIDEV *);
@@ -144,10 +148,6 @@ public:
 	bool CheckBlockAddress(SASIDEV *, access_mode);
 	bool GetStartAndCount(SASIDEV *, uint64_t&, uint32_t&, access_mode);
 	bool CheckReady();
-	bool SetDriveParams();
-	bool RamDiagnostics();
-	bool DriveDiagnostics();
-	bool ControllerDiagnostics();
 
 	// TODO This method should not be called by SASIDEV
 	virtual bool ModeSelect(const DWORD *cdb, const BYTE *buf, int length);

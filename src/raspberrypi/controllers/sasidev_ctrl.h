@@ -201,5 +201,11 @@ protected:
 	// Special operations
 	void FlushUnit();						// Flush the logical unit
 
+	//Xebec s1410 specific commands
+	void SetDriveParams();
+	void RamDiagnostics();
+	void DriveDiagnostics();
+	void ControllerDiagnostics();
+
 	ctrl_t ctrl;								// Internal data
 };
