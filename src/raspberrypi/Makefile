@@ -12,7 +12,7 @@ CXX = $(CROSS_COMPILE)g++
 ##   DEBUG=1  : A Debug build includes the debugger symbols
 ##              and disables compiler optimization. Typically,
 ##              this is only used by developers.
-DEBUG ?= 0
+DEBUG ?= 1
 ifeq ($(DEBUG), 1)
 	# Debug CFLAGS
 	CFLAGS += -O0 -g -Wall -DDEBUG

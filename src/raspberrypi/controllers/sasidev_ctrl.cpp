@@ -355,6 +355,9 @@ void SASIDEV::Execute()
 	ctrl.blocks = 1;
 	ctrl.execstart = SysTimer::GetTimerLow();
 
+	DWORD lun = GetEffectiveLun();
+	ctrl.device = ctrl.unit[lun];
+
 	// Discard pending sense data from the previous command if the current command is not REQUEST SENSE
 	if ((SASIDEV::sasi_command)ctrl.cmd[0] != SASIDEV::eCmdRequestSense) {
 		ctrl.status = 0;
@@ -436,7 +439,6 @@ void SASIDEV::Execute()
 	LOGTRACE("%s ID %d received unsupported command: $%02X", __PRETTY_FUNCTION__, GetSCSIID(), (BYTE)ctrl.cmd[0]);
 
 	// Logical Unit
-	DWORD lun = GetEffectiveLun();
 	if (ctrl.unit[lun]) {
 		// Command processing on drive
 		ctrl.unit[lun]->SetStatusCode(STATUS_INVALIDCMD);
@@ -481,11 +483,14 @@ void SASIDEV::Status()
 		ctrl.offset = 0;
 		ctrl.length = 1;
 		ctrl.blocks = 1;
-		ctrl.buffer[0] = (BYTE)ctrl.status;
+		ctrl.buffer[0] = 0;//(BYTE)ctrl.status;
 
 		LOGTRACE( "%s Status Phase $%02X",__PRETTY_FUNCTION__, (unsigned int)ctrl.status);
 
 		return;
+	}
+	else {
+		LOGINFO("%s ctrl.status was not BUS::status", __PRETTY_FUNCTION__);
 	}
 
 	// Send
