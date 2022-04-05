@@ -67,7 +67,7 @@ private:
 		eCmdSeek6 = 0x0B,
 		eCmdSetDriveParams  = 0x0C,    // Xebec s1410 specific command
 		eCmdRamDiagnostics  = 0xE0,    // Xebec s1410 specific command
-		eCmdDriveDiagnostics  = 0xE4,  // Xebec s1410 specific command
+		eCmdDriveDiagnostics  = 0xE3,  // Xebec s1410 specific command
 		eCmdCntrlDiagnostics  = 0xE4,  // Xebec s1410 specific command
 		eCmdSetMcastAddr  = 0x0D,      // DaynaPort specific command
 		eCmdModeSelect6 = 0x15,

@@ -231,7 +231,7 @@ void SASIDEV::BusFree()
 		ctrl.bus->SetMSG(FALSE);
 		ctrl.bus->SetCD(FALSE);
 		ctrl.bus->SetIO(FALSE);
-		ctrl.bus->SetBSY(false);
+		ctrl.bus->SetBSY(FALSE);
 
 		// Initialize status and message
 		ctrl.status = 0x00;
@@ -273,8 +273,8 @@ void SASIDEV::Selection()
 		// Phase change
 		ctrl.phase = BUS::selection;
 
-		// Raiase BSY and respond
-		ctrl.bus->SetBSY(true);
+		// Raise BSY and respond
+		ctrl.bus->SetBSY(TRUE);
 		return;
 	}
 
@@ -429,6 +429,25 @@ void SASIDEV::Execute()
 		// leaving it here for now....
 		case SASIDEV::eCmdInvalid:
 			CmdSpecify();
+			return;
+
+		// What is the point of the AddCommand() method if
+		// everything has to be spelled out in this switch
+		// statement?
+		case eCmdSetDriveParams:
+			SetDriveParams();
+			return;
+
+		case eCmdRamDiagnostics:
+			RamDiagnostics();
+			return;
+
+		case eCmdDriveDiagnostics:
+			DriveDiagnostics();
+			return;
+
+		case eCmdCntrlDiagnostics:
+			ControllerDiagnostics();
 			return;
 
 		default:
@@ -776,8 +795,11 @@ void SASIDEV::SetDriveParams()
 {
 	LOGTRACE( "%s SetDriveParams Command", __PRETTY_FUNCTION__);
 
-	// status phase
-	Status();
+	// Request 8 bytes of data
+	ctrl.length = 8;
+
+	// Write phase
+	DataOut();
 }
 
 //

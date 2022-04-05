@@ -1677,16 +1677,15 @@ int main(int argc, char* argv[])
 			}
 			continue;
 		}
-
-		// Get the bus
+#endif	// USE_SEL_EVENT_ENABLE
+		
+		// Read the GPIO pins
 		bus->Aquire();
-#else
-		bus->Aquire();
+		// SEL may not be active if poll happened because of DT pin
 		if (!bus->GetSEL()) {
 			usleep(0);
 			continue;
 		}
-#endif	// USE_SEL_EVENT_ENABLE
 
         // Wait until BSY is released as there is a possibility for the
         // initiator to assert it while setting the ID (for up to 3 seconds)
