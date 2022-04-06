@@ -431,9 +431,6 @@ void SASIDEV::Execute()
 			CmdSpecify();
 			return;
 
-		// What is the point of the AddCommand() method if
-		// everything has to be spelled out in this switch
-		// statement?
 		case eCmdSetDriveParams:
 			SetDriveParams();
 			return;
