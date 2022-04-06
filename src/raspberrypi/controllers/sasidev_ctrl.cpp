@@ -1294,6 +1294,7 @@ bool SASIDEV::XferOut(bool cont)
 			break;
 
 		// SPECIFY(SASI only)
+		case SASIDEV::eCmdSetDriveParams:
 		case SASIDEV::eCmdInvalid:
 			break;
 
@@ -1364,6 +1365,9 @@ void SASIDEV::FlushUnit()
 			// TODO: Eventually, we should store off the multicast address configuration data here...
 			break;
 
+		case SASIDEV::eCmdSetDriveParams:
+			break;
+			
 		default:
 			LOGWARN("Received an unexpected flush command $%02X\n",(WORD)ctrl.cmd[0]);
 			break;
