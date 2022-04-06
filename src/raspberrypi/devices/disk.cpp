@@ -1183,15 +1183,12 @@ bool Disk::Format(const DWORD *cdb)
 		return false;
 	}
 
-#if 0
 	// FMTDATA=1 is not supported (but OK if there is no DEFECT LIST)
 	if ((cdb[1] & 0x10) != 0 && cdb[4] != 0) {
 		SetStatusCode(STATUS_INVALIDCDB);
 		return false;
 	}
-#endif
 
-	LOGTRACE("FORMAT success %s", __PRETTY_FUNCTION__);
 	// FORMAT Success
 	return true;
 }

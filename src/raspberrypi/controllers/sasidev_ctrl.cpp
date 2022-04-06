@@ -499,14 +499,11 @@ void SASIDEV::Status()
 		ctrl.offset = 0;
 		ctrl.length = 1;
 		ctrl.blocks = 1;
-		ctrl.buffer[0] = 0;//(BYTE)ctrl.status;
+		ctrl.buffer[0] = (BYTE)ctrl.status;
 
 		LOGTRACE( "%s Status Phase $%02X",__PRETTY_FUNCTION__, (unsigned int)ctrl.status);
 
 		return;
-	}
-	else {
-		LOGINFO("%s ctrl.status was not BUS::status", __PRETTY_FUNCTION__);
 	}
 
 	// Send
