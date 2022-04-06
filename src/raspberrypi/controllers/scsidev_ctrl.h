@@ -40,10 +40,6 @@ public:
 		eCmdSetIfaceMode = 0x0C,       // DaynaPort specific command
 		eCmdSetMcastAddr  = 0x0D,      // DaynaPort specific command
 		eCmdEnableInterface = 0x0E,    // DaynaPort specific command
-		eCmdSetDriveParams  = 0x0C,    // Xebec s1410 specific command
-		eCmdRamDiagnostics  = 0xE0,    // Xebec s1410 specific command
-		eCmdDriveDiagnostics  = 0xE3,  // Xebec s1410 specific command
-		eCmdCntrlDiagnostics  = 0xE4,  // Xebec s1410 specific command
 		eCmdInquiry = 0x12,
 		eCmdModeSelect6 = 0x15,
 		eCmdReserve6 = 0x16,

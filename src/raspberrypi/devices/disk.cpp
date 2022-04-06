@@ -68,10 +68,6 @@ Disk::Disk(const std::string id) : Device(id), ScsiPrimaryCommands(), ScsiBlockC
 	AddCommand(SCSIDEV::eCmdVerify16, "Verify16", &Disk::Verify16);
 	AddCommand(SCSIDEV::eCmdReadCapacity16_ReadLong16, "ReadCapacity16/ReadLong16", &Disk::ReadCapacity16_ReadLong16);
 	AddCommand(SCSIDEV::eCmdReportLuns, "ReportLuns", &Disk::ReportLuns);
-	AddCommand(SCSIDEV::eCmdSetDriveParams, "SetDriveParams", &Disk::SetDriveParams);
-	AddCommand(SCSIDEV::eCmdRamDiagnostics, "RamDiagnostics", &Disk::RamDiagnostics);
-	AddCommand(SCSIDEV::eCmdDriveDiagnostics, "DriveDiagnostics", &Disk::DriveDiagnostics);
-	AddCommand(SCSIDEV::eCmdCntrlDiagnostics, "ControllerDiagnostics", &Disk::ControllerDiagnostics);
 }
 
 Disk::~Disk()
@@ -1509,75 +1505,6 @@ void Disk::ReportLuns(SASIDEV *controller)
 	ctrl->length = allocation_length < 8 + luns * 8 ? allocation_length : 8 + luns * 8;
 
 	controller->DataIn();
-}
-
-//
-//	SET DRIVE PARAMS
-//
-//  The Xebec s1410 requests that hosts send an initialization of drive
-//  characteristics before issuing other commands as part of the board
-//  bootup process. RaSCSI doesn't support this use case. However, the
-//  Victor 9000 requires a positive repsonse before proceeding with 
-//  additional checks as part of the startup process. We respond with 
-//  an OK status.
-//
-//---------------------------------------------------------------------------
-void Disk::SetDriveParams(SASIDEV *controller)
-{
-	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
-
-	LOGTRACE("%s Status $%02X, Sense Key $%02X, ASC $%02X",__PRETTY_FUNCTION__, ctrl->status, ctrl->buffer[2], ctrl->buffer[12]);
-
-	controller->Status();
-}
-
-//
-//	RAM DIAGNOSTICS
-//
-//  The Xebec s1410 requests that hosts request a RAM diagnostics of the
-//  SASI controller prior to working with the drive. This command verifies
-//  that the sector buffer is operational by writing, reading and verifying 
-//  various data patterns to and from all locations. RaSCSI doesn't 
-//  support this use case. However, the Victor 9000 requires a 
-//  positive repsonse before proceeding with additional checks as part 
-//  of the startup process. We respond with an OK status.
-//
-//---------------------------------------------------------------------------
-void Disk::RamDiagnostics(SASIDEV *controller)
-{
-	controller->Status();
-}
-
-//
-//	DRIVE DIAGNOSTICS
-//
-//  The Xebec s1410 requests that hosts request a drive diagnostics from the
-//  SASI controller prior to working with the drive. The diagnostic involved
-//  steping through all tracks and verifying the ECC on the identifier fields
-//  of the first sector of each track. RaSCSI doesn't 
-//  support this use case. However, the Victor 9000 requires a 
-//  positive repsonse before proceeding with additional checks as part 
-//  of the startup process. We respond with an OK status.
-//
-//---------------------------------------------------------------------------
-void Disk::DriveDiagnostics(SASIDEV *controller)
-{
-	controller->Status();
-}
-
-//
-//	CONTROLLER DIAGNOSTICS
-//
-//  The Xebec s1410 requests that hosts request a controller self-test from the
-//  SASI board prior to working with the drive. RaSCSI doesn't 
-//  support this use case. However, the Victor 9000 requires a 
-//  positive repsonse before proceeding with additional checks as part 
-//  of the startup process. We respond with an OK status.
-//
-//---------------------------------------------------------------------------
-void Disk::ControllerDiagnostics(SASIDEV *controller)
-{
-	controller->Status();
 }
 
 //---------------------------------------------------------------------------
