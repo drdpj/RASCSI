@@ -1018,9 +1018,6 @@ void SASIDEV::Send()
 		ctrl.length = 0;
 		return;
 	}
-	else{
-		LOGINFO("%s ctrl.length was 0", __PRETTY_FUNCTION__);
-	}
 
 	// Remove block and initialize the result
 	ctrl.blocks--;
@@ -1353,7 +1350,7 @@ void SASIDEV::FlushUnit()
 				LOGWARN("Error occured while processing Mode Select command %02X\n", (unsigned char)ctrl.cmd[0]);
 				return;
 			}
-            break;
+			break;
 
 		case SASIDEV::eCmdSetMcastAddr:
 			// TODO: Eventually, we should store off the multicast address configuration data here...
