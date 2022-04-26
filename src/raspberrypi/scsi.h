@@ -10,6 +10,7 @@
 //---------------------------------------------------------------------------
 
 #pragma once
+#include "os.h"
 
 //===========================================================================
 //
@@ -103,7 +104,7 @@ public:
 		return ((raw_data >> pin_num) & 1);
 	}
 
-	virtual bool GetBSY() = 0;
+	virtual BOOL GetBSY() = 0;
 	virtual void SetBSY(bool ast) = 0;
 
 	virtual BOOL GetSEL() = 0;

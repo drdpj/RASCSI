@@ -65,7 +65,13 @@ private:
 		eCmdRead6 = 0x08,
 		eCmdWrite6 = 0x0A,
 		eCmdSeek6 = 0x0B,
-		eCmdSetMcastAddr  = 0x0D,    // DaynaPort specific command
+		eCmdWriteSectorBuffer = 0x0F,
+		eCmdReadSectorBuffer = 0x10,
+		eCmdSetDriveParams  = 0x0C,    // SASI bridge specific command
+		eCmdRamDiagnostics  = 0xE0,    // SASI bridge specific command
+		eCmdDriveDiagnostics  = 0xE3,  // SASI bridge specific command
+		eCmdCntrlDiagnostics  = 0xE4,  // SASI bridge specific command
+		eCmdSetMcastAddr  = 0x0D,      // DaynaPort specific command
 		eCmdModeSelect6 = 0x15,
 		eCmdReserve6 = 0x16,
 		eCmdRelease6 = 0x17,
@@ -196,6 +202,12 @@ protected:
 
 	// Special operations
 	void FlushUnit();						// Flush the logical unit
+
+	//Xebec s1410 specific commands
+	void SetDriveParams();
+	void RamDiagnostics();
+	void DriveDiagnostics();
+	void ControllerDiagnostics();
 
 	ctrl_t ctrl;								// Internal data
 };

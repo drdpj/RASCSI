@@ -1299,7 +1299,14 @@ bool ParseArgument(int argc, char* argv[], int& port)
 		device->set_unit(unit);
 		device->set_type(type);
 		device->set_block_size(block_size);
-		AddParam(*device, "file", optarg);
+
+		// Either interface or file parameters are supported
+		if (device_factory.GetDefaultParams(type).count("interfaces")) {
+			AddParam(*device, "interfaces", optarg);
+		}
+		else {
+			AddParam(*device, "file", optarg);
+		}
 
 		size_t separator_pos = name.find(':');
 		if (separator_pos != string::npos) {
@@ -1670,16 +1677,15 @@ int main(int argc, char* argv[])
 			}
 			continue;
 		}
-
-		// Get the bus
+#endif	// USE_SEL_EVENT_ENABLE
+		
+		// Read the GPIO pins
 		bus->Aquire();
-#else
-		bus->Aquire();
+		// SEL may not be active if poll happened because of DT pin
 		if (!bus->GetSEL()) {
 			usleep(0);
 			continue;
 		}
-#endif	// USE_SEL_EVENT_ENABLE
 
         // Wait until BSY is released as there is a possibility for the
         // initiator to assert it while setting the ID (for up to 3 seconds)

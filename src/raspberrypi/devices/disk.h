@@ -45,8 +45,6 @@ private:
 	// The mapping of supported capacities to block sizes and block counts, empty if there is no capacity restriction
 	map<uint64_t, Geometry> geometries;
 
-	SASIDEV::ctrl_t *ctrl;
-
 	typedef struct {
 		uint32_t size;							// Sector Size (8=256, 9=512, 10=1024, 11=2048, 12=4096)
 		// TODO blocks should be a 64 bit value in order to support higher capacities
@@ -113,6 +111,10 @@ public:
 	void ReadCapacity10(SASIDEV *) override;
 	void ReadCapacity16(SASIDEV *) override;
 	void ReportLuns(SASIDEV *) override;
+	void SetDriveParams(SASIDEV *);
+	void RamDiagnostics(SASIDEV *);
+	void DriveDiagnostics(SASIDEV *);
+	void ControllerDiagnostics(SASIDEV *);
 	void Reserve6(SASIDEV *);
 	void Reserve10(SASIDEV *);
 	void Release6(SASIDEV *);

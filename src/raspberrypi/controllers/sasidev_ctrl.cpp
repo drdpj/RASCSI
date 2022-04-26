@@ -231,7 +231,7 @@ void SASIDEV::BusFree()
 		ctrl.bus->SetMSG(FALSE);
 		ctrl.bus->SetCD(FALSE);
 		ctrl.bus->SetIO(FALSE);
-		ctrl.bus->SetBSY(false);
+		ctrl.bus->SetBSY(FALSE);
 
 		// Initialize status and message
 		ctrl.status = 0x00;
@@ -273,8 +273,8 @@ void SASIDEV::Selection()
 		// Phase change
 		ctrl.phase = BUS::selection;
 
-		// Raiase BSY and respond
-		ctrl.bus->SetBSY(true);
+		// Raise BSY and respond
+		ctrl.bus->SetBSY(TRUE);
 		return;
 	}
 
@@ -355,6 +355,9 @@ void SASIDEV::Execute()
 	ctrl.blocks = 1;
 	ctrl.execstart = SysTimer::GetTimerLow();
 
+	DWORD lun = GetEffectiveLun();
+	ctrl.device = ctrl.unit[lun];
+
 	// Discard pending sense data from the previous command if the current command is not REQUEST SENSE
 	if ((SASIDEV::sasi_command)ctrl.cmd[0] != SASIDEV::eCmdRequestSense) {
 		ctrl.status = 0;
@@ -428,6 +431,22 @@ void SASIDEV::Execute()
 			CmdSpecify();
 			return;
 
+		case eCmdSetDriveParams:
+			SetDriveParams();
+			return;
+
+		case eCmdRamDiagnostics:
+			RamDiagnostics();
+			return;
+
+		case eCmdDriveDiagnostics:
+			DriveDiagnostics();
+			return;
+
+		case eCmdCntrlDiagnostics:
+			ControllerDiagnostics();
+			return;
+
 		default:
 			break;
 	}
@@ -436,7 +455,6 @@ void SASIDEV::Execute()
 	LOGTRACE("%s ID %d received unsupported command: $%02X", __PRETTY_FUNCTION__, GetSCSIID(), (BYTE)ctrl.cmd[0]);
 
 	// Logical Unit
-	DWORD lun = GetEffectiveLun();
 	if (ctrl.unit[lun]) {
 		// Command processing on drive
 		ctrl.unit[lun]->SetStatusCode(STATUS_INVALIDCMD);
@@ -756,6 +774,86 @@ void SASIDEV::CmdReleaseUnit()
 	Status();
 }
 
+//
+//	SET DRIVE PARAMS
+//
+//  The Xebec s1410 requests that hosts send an initialization of drive
+//  characteristics before issuing other commands as part of the board
+//  bootup process. RaSCSI doesn't support this use case. However, the
+//  Victor 9000 requires a positive repsonse before proceeding with 
+//  additional checks as part of the startup process. We respond with 
+//  an OK status.
+//
+//---------------------------------------------------------------------------
+void SASIDEV::SetDriveParams()
+{
+	LOGTRACE( "%s SetDriveParams Command", __PRETTY_FUNCTION__);
+
+	// Request 8 bytes of data
+	ctrl.length = 8;
+
+	// Write phase
+	DataOut();
+}
+
+//
+//	RAM DIAGNOSTICS
+//
+//  The Xebec s1410 requests that hosts request a RAM diagnostics of the
+//  SASI controller prior to working with the drive. This command verifies
+//  that the sector buffer is operational by writing, reading and verifying 
+//  various data patterns to and from all locations. RaSCSI doesn't 
+//  support this use case. However, the Victor 9000 requires a 
+//  positive repsonse before proceeding with additional checks as part 
+//  of the startup process. We respond with an OK status.
+//
+//---------------------------------------------------------------------------
+void SASIDEV::RamDiagnostics()
+{
+	LOGTRACE( "%s RamDiagnostics Command", __PRETTY_FUNCTION__);
+
+	// status phase
+	Status();
+}
+
+//
+//	DRIVE DIAGNOSTICS
+//
+//  The Xebec s1410 requests that hosts request a drive diagnostics from the
+//  SASI controller prior to working with the drive. The diagnostic involved
+//  steping through all tracks and verifying the ECC on the identifier fields
+//  of the first sector of each track. RaSCSI doesn't 
+//  support this use case. However, the Victor 9000 requires a 
+//  positive repsonse before proceeding with additional checks as part 
+//  of the startup process. We respond with an OK status.
+//
+//---------------------------------------------------------------------------
+void SASIDEV::DriveDiagnostics()
+{
+	LOGTRACE( "%s DriveDiagnostics Command", __PRETTY_FUNCTION__);
+
+	// status phase
+	Status();
+}
+
+//
+//	CONTROLLER DIAGNOSTICS
+//
+//  The Xebec s1410 requests that hosts request a controller self-test from the
+//  SASI board prior to working with the drive. RaSCSI doesn't 
+//  support this use case. However, the Victor 9000 requires a 
+//  positive repsonse before proceeding with additional checks as part 
+//  of the startup process. We respond with an OK status.
+//
+//---------------------------------------------------------------------------
+void SASIDEV::ControllerDiagnostics()
+{
+	LOGTRACE( "%s ControllerDiagnostics Command", __PRETTY_FUNCTION__);
+
+	// status phase
+	Status();
+}
+
 //---------------------------------------------------------------------------
 //
 //	READ(6)
@@ -919,9 +1017,6 @@ void SASIDEV::Send()
 		ctrl.offset += ctrl.length;
 		ctrl.length = 0;
 		return;
-	}
-	else{
-		LOGINFO("%s ctrl.length was 0", __PRETTY_FUNCTION__);
 	}
 
 	// Remove block and initialize the result
@@ -1190,6 +1285,7 @@ bool SASIDEV::XferOut(bool cont)
 			break;
 
 		// SPECIFY(SASI only)
+		case SASIDEV::eCmdSetDriveParams:
 		case SASIDEV::eCmdInvalid:
 			break;
 
@@ -1254,12 +1350,15 @@ void SASIDEV::FlushUnit()
 				LOGWARN("Error occured while processing Mode Select command %02X\n", (unsigned char)ctrl.cmd[0]);
 				return;
 			}
-            break;
+			break;
 
 		case SASIDEV::eCmdSetMcastAddr:
 			// TODO: Eventually, we should store off the multicast address configuration data here...
 			break;
 
+		case SASIDEV::eCmdSetDriveParams:
+			break;
+			
 		default:
 			LOGWARN("Received an unexpected flush command $%02X\n",(WORD)ctrl.cmd[0]);
 			break;

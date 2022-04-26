@@ -34,12 +34,12 @@ public:
 		eCmdFormat = 0x04,
 		eCmdReassign = 0x07,
 		eCmdRead6 = 0x08,
-		eCmdRetrieveStats = 0x09,    // DaynaPort specific command
+		eCmdRetrieveStats = 0x09,      // DaynaPort specific command
 		eCmdWrite6 = 0x0A,
 		eCmdSeek6 = 0x0B,
-		eCmdSetIfaceMode = 0x0C,     // DaynaPort specific command
-		eCmdSetMcastAddr  = 0x0D,    // DaynaPort specific command
-		eCmdEnableInterface = 0x0E,  // DaynaPort specific command
+		eCmdSetIfaceMode = 0x0C,       // DaynaPort specific command
+		eCmdSetMcastAddr  = 0x0D,      // DaynaPort specific command
+		eCmdEnableInterface = 0x0E,    // DaynaPort specific command
 		eCmdInquiry = 0x12,
 		eCmdModeSelect6 = 0x15,
 		eCmdReserve6 = 0x16,

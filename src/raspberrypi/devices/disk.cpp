@@ -98,7 +98,7 @@ void Disk::AddCommand(SCSIDEV::scsi_command opcode, const char* name, void (Disk
 
 bool Disk::Dispatch(SCSIDEV *controller)
 {
-	ctrl = controller->GetCtrl();
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
 
 	if (commands.count(static_cast<SCSIDEV::scsi_command>(ctrl->cmd[0]))) {
 		command_t *command = commands[static_cast<SCSIDEV::scsi_command>(ctrl->cmd[0])];
@@ -170,7 +170,8 @@ void Disk::Rezero(SASIDEV *controller)
 void Disk::RequestSense(SASIDEV *controller)
 {
 	int lun = controller->GetEffectiveLun();
-
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
+	
     // Note: According to the SCSI specs the LUN handling for REQUEST SENSE non-existing LUNs do *not* result
 	// in CHECK CONDITION. Only the Sense Key and ASC are set in order to signal the non-existing LUN.
 	if (!ctrl->unit[lun]) {
@@ -181,16 +182,21 @@ void Disk::RequestSense(SASIDEV *controller)
 		ctrl->status = 0x00;
 	}
 
-    ctrl->length = ctrl->unit[lun]->RequestSense(ctrl->cmd, ctrl->buffer);
-	ASSERT(ctrl->length > 0);
+	ctrl->length = 4;
+	ctrl->buffer[0] = 0;
+	ctrl->buffer[1] = 0;
+	ctrl->buffer[2] = 0;
+	ctrl->buffer[3] = 0;
 
-    LOGTRACE("%s Status $%02X, Sense Key $%02X, ASC $%02X",__PRETTY_FUNCTION__, ctrl->status, ctrl->buffer[2], ctrl->buffer[12]);
+	LOGTRACE("%s Status $%02X, Sense Key $%02X, ASC $%02X",__PRETTY_FUNCTION__, ctrl->status, ctrl->buffer[0], ctrl->buffer[1]);
 
-    controller->DataIn();
+	controller->DataIn();
 }
 
 void Disk::FormatUnit(SASIDEV *controller)
 {
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
+
 	if (!Format(ctrl->cmd)) {
 		controller->Error();
 		return;
@@ -211,6 +217,8 @@ void Disk::ReassignBlocks(SASIDEV *controller)
 
 void Disk::Read(SASIDEV *controller, uint64_t record)
 {
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
+
 	ctrl->length = Read(ctrl->cmd, ctrl->buffer, record);
 	LOGTRACE("%s ctrl.length is %d", __PRETTY_FUNCTION__, (int)ctrl->length);
 
@@ -228,6 +236,7 @@ void Disk::Read(SASIDEV *controller, uint64_t record)
 void Disk::Read6(SASIDEV *controller)
 {
 	uint64_t start;
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
 	if (GetStartAndCount(controller, start, ctrl->blocks, RW6)) {
 		LOGDEBUG("%s READ(6) command record=$%08X blocks=%d", __PRETTY_FUNCTION__, (uint32_t)start, ctrl->blocks);
 
@@ -238,6 +247,7 @@ void Disk::Read6(SASIDEV *controller)
 void Disk::Read10(SASIDEV *controller)
 {
 	uint64_t start;
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
 	if (GetStartAndCount(controller, start, ctrl->blocks, RW10)) {
 		LOGDEBUG("%s READ(10) command record=$%08X blocks=%d", __PRETTY_FUNCTION__, (uint32_t)start, ctrl->blocks);
 
@@ -248,6 +258,7 @@ void Disk::Read10(SASIDEV *controller)
 void Disk::Read16(SASIDEV *controller)
 {
 	uint64_t start;
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
 	if (GetStartAndCount(controller, start, ctrl->blocks, RW16)) {
 		LOGDEBUG("%s READ(16) command record=$%08X blocks=%d", __PRETTY_FUNCTION__, (uint32_t)start, ctrl->blocks);
 
@@ -257,6 +268,8 @@ void Disk::Read16(SASIDEV *controller)
 
 void Disk::ReadWriteLong10(SASIDEV *controller)
 {
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
+
 	// Transfer lengths other than 0 are not supported, which is compliant with the SCSI standard
 	if (ctrl->cmd[7] || ctrl->cmd[8]) {
 		controller->Error(ERROR_CODES::sense_key::ILLEGAL_REQUEST, ERROR_CODES::asc::INVALID_FIELD_IN_CDB);
@@ -275,6 +288,8 @@ void Disk::ReadLong10(SASIDEV *controller)
 
 void Disk::ReadWriteLong16(SASIDEV *controller)
 {
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
+
 	// Transfer lengths other than 0 are not supported, which is compliant with the SCSI standard
 	if (ctrl->cmd[12] || ctrl->cmd[13]) {
 		controller->Error(ERROR_CODES::sense_key::ILLEGAL_REQUEST, ERROR_CODES::asc::INVALID_FIELD_IN_CDB);
@@ -293,6 +308,8 @@ void Disk::ReadLong16(SASIDEV *controller)
 
 void Disk::Write(SASIDEV *controller, uint64_t record)
 {
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
+
 	ctrl->length = WriteCheck(record);
 	if (ctrl->length == 0) {
 		controller->Error(ERROR_CODES::sense_key::NOT_READY, ERROR_CODES::asc::NO_ADDITIONAL_SENSE_INFORMATION);
@@ -311,6 +328,8 @@ void Disk::Write(SASIDEV *controller, uint64_t record)
 
 void Disk::Write6(SASIDEV *controller)
 {
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
+
 	uint64_t start;
 	if (GetStartAndCount(controller, start, ctrl->blocks, RW6)) {
 		LOGDEBUG("%s WRITE(6) command record=$%08X blocks=%d", __PRETTY_FUNCTION__, (uint32_t)start, ctrl->blocks);
@@ -322,6 +341,7 @@ void Disk::Write6(SASIDEV *controller)
 void Disk::Write10(SASIDEV *controller)
 {
 	uint64_t start;
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
 	if (GetStartAndCount(controller, start, ctrl->blocks, RW10)) {
 		LOGDEBUG("%s WRITE(10) command record=$%08X blocks=%d",__PRETTY_FUNCTION__, (uint32_t)start, ctrl->blocks);
 
@@ -332,6 +352,7 @@ void Disk::Write10(SASIDEV *controller)
 void Disk::Write16(SASIDEV *controller)
 {
 	uint64_t start;
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
 	if (GetStartAndCount(controller, start, ctrl->blocks, RW16)) {
 		LOGDEBUG("%s WRITE(16) command record=$%08X blocks=%d",__PRETTY_FUNCTION__, (uint32_t)start, ctrl->blocks);
 
@@ -351,6 +372,8 @@ void Disk::WriteLong16(SASIDEV *controller)
 
 void Disk::Verify(SASIDEV *controller, uint64_t record)
 {
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
+
 	// if BytChk=0
 	if ((ctrl->cmd[1] & 0x02) == 0) {
 		Seek(controller);
@@ -372,6 +395,8 @@ void Disk::Verify(SASIDEV *controller, uint64_t record)
 
 void Disk::Verify10(SASIDEV *controller)
 {
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
+
 	// Get record number and block number
 	uint64_t record;
 	if (GetStartAndCount(controller, record, ctrl->blocks, RW10)) {
@@ -385,6 +410,7 @@ void Disk::Verify16(SASIDEV *controller)
 {
 	// Get record number and block number
 	uint64_t record;
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
 	if (GetStartAndCount(controller, record, ctrl->blocks, RW16)) {
 		LOGDEBUG("%s VERIFY(16) command record=$%08X blocks=%d",__PRETTY_FUNCTION__, (uint32_t)record, ctrl->blocks);
 
@@ -395,6 +421,7 @@ void Disk::Verify16(SASIDEV *controller)
 void Disk::Inquiry(SASIDEV *controller)
 {
 	int lun = controller->GetEffectiveLun();
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
 	const ScsiPrimaryCommands *device = ctrl->unit[lun];
 
 	// Find a valid unit
@@ -433,6 +460,8 @@ void Disk::Inquiry(SASIDEV *controller)
 
 void Disk::ModeSelect6(SASIDEV *controller)
 {
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
+
 	LOGTRACE("%s Unsupported mode page $%02X", __PRETTY_FUNCTION__, ctrl->buffer[0]);
 
 	ctrl->length = ModeSelectCheck6(ctrl->cmd);
@@ -446,6 +475,8 @@ void Disk::ModeSelect6(SASIDEV *controller)
 
 void Disk::ModeSelect10(SASIDEV *controller)
 {
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
+
 	LOGTRACE("%s Unsupported mode page $%02X", __PRETTY_FUNCTION__, ctrl->buffer[0]);
 
 	ctrl->length = ModeSelectCheck10(ctrl->cmd);
@@ -459,10 +490,10 @@ void Disk::ModeSelect10(SASIDEV *controller)
 
 void Disk::ModeSense6(SASIDEV *controller)
 {
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
+
 	ctrl->length = ModeSense6(ctrl->cmd, ctrl->buffer);
 	if (ctrl->length <= 0) {
-		LOGTRACE("%s Unsupported mode page $%02X",__PRETTY_FUNCTION__, (unsigned int)ctrl->cmd[2]);
-
 		controller->Error();
 		return;
 	}
@@ -472,10 +503,10 @@ void Disk::ModeSense6(SASIDEV *controller)
 
 void Disk::ModeSense10(SASIDEV *controller)
 {
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
+
 	ctrl->length = ModeSense10(ctrl->cmd, ctrl->buffer);
 	if (ctrl->length <= 0) {
-		LOGTRACE("%s Unsupported mode page $%02X", __PRETTY_FUNCTION__, (unsigned int)ctrl->cmd[2]);
-
 		controller->Error();
 		return;
 	}
@@ -485,6 +516,8 @@ void Disk::ModeSense10(SASIDEV *controller)
 
 void Disk::StartStopUnit(SASIDEV *controller)
 {
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
+
 	if (!StartStop(ctrl->cmd)) {
 		controller->Error();
 		return;
@@ -495,6 +528,8 @@ void Disk::StartStopUnit(SASIDEV *controller)
 
 void Disk::SendDiagnostic(SASIDEV *controller)
 {
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
+
 	if (!SendDiag(ctrl->cmd)) {
 		controller->Error();
 		return;
@@ -510,6 +545,7 @@ void Disk::PreventAllowMediumRemoval(SASIDEV *controller)
 		return;
 	}
 
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
 	bool lock = ctrl->cmd[4] & 0x01;
 
 	LOGTRACE("%s", lock ? "Locking medium" : "Unlocking medium");
@@ -521,7 +557,8 @@ void Disk::PreventAllowMediumRemoval(SASIDEV *controller)
 
 void Disk::SynchronizeCache10(SASIDEV *controller)
 {
-	// Nothing to do
+	// Flush the RaSCSI cache
+	disk.dcache->Save();
 
 	controller->Status();
 }
@@ -533,6 +570,8 @@ void Disk::SynchronizeCache16(SASIDEV *controller)
 
 void Disk::ReadDefectData10(SASIDEV *controller)
 {
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
+
 	ctrl->length = ReadDefectData10(ctrl->cmd, ctrl->buffer);
 	if (ctrl->length <= 4) {
 		controller->Error();
@@ -681,7 +720,6 @@ int Disk::ModeSense6(const DWORD *cdb, BYTE *buf)
 {
 	// Get length, clear buffer
 	int length = (int)cdb[4];
-	ASSERT((length >= 0) && (length < 0x100));
 	memset(buf, 0, length);
 
 	// Get changeable flag
@@ -691,12 +729,15 @@ int Disk::ModeSense6(const DWORD *cdb, BYTE *buf)
 	int page = cdb[2] & 0x3f;
 	bool valid = page == 0x00;
 
+	LOGTRACE("%s Requesting mode page $%02X", __PRETTY_FUNCTION__, page);
+
 	// Basic information
 	int size = 4;
 
 	// MEDIUM TYPE
 	if (IsMo()) {
-		buf[1] = 0x03; // optical reversible or erasable
+		// Optical reversible or erasable
+		buf[1] = 0x03;
 	}
 
 	// DEVICE SPECIFIC PARAMETER
@@ -704,7 +745,7 @@ int Disk::ModeSense6(const DWORD *cdb, BYTE *buf)
 		buf[2] = 0x80;
 	}
 
-	// add block descriptor if DBD is 0
+	// Add block descriptor if DBD is 0
 	if ((cdb[1] & 0x08) == 0) {
 		// Mode parameter header, block descriptor length
 		buf[3] = 0x08;
@@ -726,53 +767,52 @@ int Disk::ModeSense6(const DWORD *cdb, BYTE *buf)
 			buf[11] = disk_size;
 		}
 
-		// size
 		size = 12;
 	}
 
-	// Page code 1(read-write error recovery)
-	if ((page == 0x01) || (page == 0x3f)) {
+	// Page code 1 (read-write error recovery)
+	if (page == 0x01 || page == 0x3f) {
 		size += AddErrorPage(change, &buf[size]);
 		valid = true;
 	}
 
-	// Page code 3(format device)
-	if ((page == 0x03) || (page == 0x3f)) {
+	// Page code 3 (format device)
+	if (page == 0x03 || page == 0x3f) {
 		size += AddFormatPage(change, &buf[size]);
 		valid = true;
 	}
 
-	// Page code 4(drive parameter)
-	if ((page == 0x04) || (page == 0x3f)) {
+	// Page code 4 (drive parameter)
+	if (page == 0x04 || page == 0x3f) {
 		size += AddDrivePage(change, &buf[size]);
 		valid = true;
 	}
 
-	// Page code 6(optical)
+	// Page code 6 (optical)
 	if (IsMo()) {
-		if ((page == 0x06) || (page == 0x3f)) {
+		if (page == 0x06 || page == 0x3f) {
 			size += AddOptionPage(change, &buf[size]);
 			valid = true;
 		}
 	}
 
-	// Page code 8(caching)
-	if ((page == 0x08) || (page == 0x3f)) {
+	// Page code 8 (caching)
+	if (page == 0x08 || page == 0x3f) {
 		size += AddCachePage(change, &buf[size]);
 		valid = true;
 	}
 
-	// Page code 13(CD-ROM)
+	// Page code 13 (CD-ROM)
 	if (IsCdRom()) {
-		if ((page == 0x0d) || (page == 0x3f)) {
+		if (page == 0x0d || page == 0x3f) {
 			size += AddCDROMPage(change, &buf[size]);
 			valid = true;
 		}
 	}
 
-	// Page code 14(CD-DA)
+	// Page code 14 (CD-DA)
 	if (IsCdRom()) {
-		if ((page == 0x0e) || (page == 0x3f)) {
+		if (page == 0x0e || page == 0x3f) {
 			size += AddCDDAPage(change, &buf[size]);
 			valid = true;
 		}
@@ -785,23 +825,22 @@ int Disk::ModeSense6(const DWORD *cdb, BYTE *buf)
 		valid = true;
 	}
 
-	// final setting of mode data length
-	buf[0] = size - 1;
-
-	// Unsupported page
 	if (!valid) {
+		LOGTRACE("%s Unsupported mode page $%02X", __PRETTY_FUNCTION__, page);
 		SetStatusCode(STATUS_INVALIDCDB);
 		return 0;
 	}
-	//check if size of data is more than size requested.
-	if (size > length) {
-		SetStatusCode(STATUS_INVALIDCDB);
-		return 0;
-	}
-	//Set length returned to actual size of data
-	length = size;
 
-	return length;
+	// Do not return more than ALLOCATION LENGTH bytes
+	if (size > length) {
+		LOGTRACE("%s %d bytes available, %d bytes requested", __PRETTY_FUNCTION__, size, length);
+		size = length;
+	}
+
+	// Final setting of mode data length
+	buf[0] = size;
+
+	return size;
 }
 
 int Disk::ModeSense10(const DWORD *cdb, BYTE *buf)
@@ -813,7 +852,6 @@ int Disk::ModeSense10(const DWORD *cdb, BYTE *buf)
 	if (length > 0x800) {
 		length = 0x800;
 	}
-	ASSERT((length >= 0) && (length < 0x800));
 	memset(buf, 0, length);
 
 	// Get changeable flag
@@ -823,12 +861,15 @@ int Disk::ModeSense10(const DWORD *cdb, BYTE *buf)
 	int page = cdb[2] & 0x3f;
 	bool valid = page == 0x00;
 
+	LOGTRACE("%s Requesting mode page $%02X", __PRETTY_FUNCTION__, page);
+
 	// Basic Information
 	int size = 8;
 
 	// MEDIUM TYPE
 	if (IsMo()) {
-		buf[2] = 0x03; // optical reversible or erasable
+		// Optical reversible or erasable
+		buf[2] = 0x03;
 	}
 
 	// DEVICE SPECIFIC PARAMETER
@@ -836,7 +877,7 @@ int Disk::ModeSense10(const DWORD *cdb, BYTE *buf)
 		buf[3] = 0x80;
 	}
 
-	// add block descriptor if DBD is 0
+	// Add block descriptor if DBD is 0
 	if ((cdb[1] & 0x08) == 0) {
 		// Only if ready
 		if (IsReady()) {
@@ -889,49 +930,49 @@ int Disk::ModeSense10(const DWORD *cdb, BYTE *buf)
 		}
 	}
 
-	// Page code 1(read-write error recovery)
-	if ((page == 0x01) || (page == 0x3f)) {
+	// Page code 1 (read-write error recovery)
+	if (page == 0x01 || page == 0x3f) {
 		size += AddErrorPage(change, &buf[size]);
 		valid = true;
 	}
 
-	// Page code 3(format device)
-	if ((page == 0x03) || (page == 0x3f)) {
+	// Page code 3 (format device)
+	if (page == 0x03 || page == 0x3f) {
 		size += AddFormatPage(change, &buf[size]);
 		valid = true;
 	}
 
-	// Page code 4(drive parameter)
-	if ((page == 0x04) || (page == 0x3f)) {
+	// Page code 4 (drive parameter)
+	if (page == 0x04 || page == 0x3f) {
 		size += AddDrivePage(change, &buf[size]);
 		valid = true;
 	}
 
-	// ペPage code 6(optical)
+	// Page code 6 (optical)
 	if (IsMo()) {
-		if ((page == 0x06) || (page == 0x3f)) {
+		if (page == 0x06 || page == 0x3f) {
 			size += AddOptionPage(change, &buf[size]);
 			valid = true;
 		}
 	}
 
-	// Page code 8(caching)
-	if ((page == 0x08) || (page == 0x3f)) {
+	// Page code 8 (caching)
+	if (page == 0x08 || page == 0x3f) {
 		size += AddCachePage(change, &buf[size]);
 		valid = true;
 	}
 
-	// Page code 13(CD-ROM)
+	// Page code 13 (CD-ROM)
 	if (IsCdRom()) {
-		if ((page == 0x0d) || (page == 0x3f)) {
+		if (page == 0x0d || page == 0x3f) {
 			size += AddCDROMPage(change, &buf[size]);
 			valid = true;
 		}
 	}
 
-	// Page code 14(CD-DA)
+	// Page code 14 (CD-DA)
 	if (IsCdRom()) {
-		if ((page == 0x0e) || (page == 0x3f)) {
+		if (page == 0x0e || page == 0x3f) {
 			size += AddCDDAPage(change, &buf[size]);
 			valid = true;
 		}
@@ -944,24 +985,23 @@ int Disk::ModeSense10(const DWORD *cdb, BYTE *buf)
 		valid = true;
 	}
 
-	// final setting of mode data length
-	buf[0] = (size - 2) >> 8;
-	buf[1] = size - 2;
-
-	// Unsupported page
 	if (!valid) {
+		LOGTRACE("%s Unsupported mode page $%02X", __PRETTY_FUNCTION__, page);
 		SetStatusCode(STATUS_INVALIDCDB);
 		return 0;
 	}
-	//check if size of data is more than size requested.
-	if (size > length) {
-		SetStatusCode(STATUS_INVALIDCDB);
-		return 0;
-	}
-	//Set length returned to actual size of data
-	length = size;
 
-	return length;
+	// Do not return more than ALLOCATION LENGTH bytes
+	if (size > length) {
+		LOGTRACE("%s %d bytes available, %d bytes requested", __PRETTY_FUNCTION__, size, length);
+		size = length;
+	}
+
+	// Final setting of mode data length
+	buf[0] = size >> 8;
+	buf[1] = size;
+
+	return size;
 }
 
 int Disk::AddErrorPage(bool change, BYTE *buf)
@@ -1295,16 +1335,21 @@ bool Disk::StartStop(const DWORD *cdb)
 		SetStopped(!start);
 	}
 
-	// Look at the eject bit and eject if necessary
-	if (load && !start) {
-		if (IsLocked()) {
-			// Cannot be ejected because it is locked
-			SetStatusCode(STATUS_PREVENT);
-			return false;
-		}
+	if (!start) {
+		// Flush the cache when stopping
+		disk.dcache->Save();
 
-		// Eject
-		return Eject(false);
+		// Look at the eject bit and eject if necessary
+		if (load) {
+			if (IsLocked()) {
+				// Cannot be ejected because it is locked
+				SetStatusCode(STATUS_PREVENT);
+				return false;
+			}
+
+			// Eject
+			return Eject(false);
+		}
 	}
 
 	return true;
@@ -1329,6 +1374,7 @@ bool Disk::SendDiag(const DWORD *cdb)
 
 void Disk::ReadCapacity10(SASIDEV *controller)
 {
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
 	BYTE *buf = ctrl->buffer;
 
 	memset(buf, 0, 8);
@@ -1368,6 +1414,7 @@ void Disk::ReadCapacity10(SASIDEV *controller)
 
 void Disk::ReadCapacity16(SASIDEV *controller)
 {
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
 	BYTE *buf = ctrl->buffer;
 
 	memset(buf, 0, 14);
@@ -1406,6 +1453,8 @@ void Disk::ReadCapacity16(SASIDEV *controller)
 
 void Disk::ReadCapacity16_ReadLong16(SASIDEV *controller)
 {
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
+
 	// The service action determines the actual command
 	switch (ctrl->cmd[1] & 0x1f) {
 	case 0x10:
@@ -1424,6 +1473,7 @@ void Disk::ReadCapacity16_ReadLong16(SASIDEV *controller)
 
 void Disk::ReportLuns(SASIDEV *controller)
 {
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
 	BYTE *buf = ctrl->buffer;
 
 	if (!CheckReady()) {
@@ -1522,6 +1572,7 @@ void Disk::Release10(SASIDEV *controller)
 
 bool Disk::CheckBlockAddress(SASIDEV *controller, access_mode mode)
 {
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
 	uint64_t block = ctrl->cmd[2];
 	block <<= 8;
 	block |= ctrl->cmd[3];
@@ -1555,6 +1606,8 @@ bool Disk::CheckBlockAddress(SASIDEV *controller, access_mode mode)
 
 bool Disk::GetStartAndCount(SASIDEV *controller, uint64_t& start, uint32_t& count, access_mode mode)
 {
+	SASIDEV::ctrl_t *ctrl = controller->GetCtrl();
+
 	if (mode == RW6) {
 		start = ctrl->cmd[1] & 0x1f;
 		start <<= 8;

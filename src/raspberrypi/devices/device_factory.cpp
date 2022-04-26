@@ -25,7 +25,7 @@ using namespace rascsi_interface;
 
 DeviceFactory::DeviceFactory()
 {
-	sector_sizes[SAHD] = { 256, 1024 };
+	sector_sizes[SAHD] = { 256, 512, 1024 };
 	sector_sizes[SCHD] = { 512, 1024, 2048, 4096 };
 	sector_sizes[SCRM] = { 512, 1024, 2048, 4096 };
 	sector_sizes[SCMO] = { 512, 1024, 2048, 4096 };
@@ -188,7 +188,7 @@ Device *DeviceFactory::CreateDevice(PbDeviceType type, const string& filename)
 
 			case SCBR:
 				device = new SCSIBR();
-				device->SetSupportedLuns(1);
+				device->SetSupportedLuns(32);
 				device->SetProduct("SCSI HOST BRIDGE");
 				device->SupportsParams(true);
 				device->SetDefaultParams(default_params[SCBR]);
@@ -196,7 +196,7 @@ Device *DeviceFactory::CreateDevice(PbDeviceType type, const string& filename)
 
 			case SCDP:
 				device = new SCSIDaynaPort();
-				device->SetSupportedLuns(1);
+				device->SetSupportedLuns(32);
 				// Since this is an emulation for a specific device the full INQUIRY data have to be set accordingly
 				device->SetVendor("Dayna");
 				device->SetProduct("SCSI/Link");

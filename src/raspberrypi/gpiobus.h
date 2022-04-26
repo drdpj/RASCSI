@@ -509,7 +509,7 @@ public:
 	void SetENB(BOOL ast);
 										// Set ENB signal
 
-	bool GetBSY();
+	BOOL GetBSY();
 										// Get BSY signal
 	void SetBSY(bool ast);
 										// Set BSY signal
@@ -650,6 +650,7 @@ private:
 
 #ifdef USE_SEL_EVENT_ENABLE
 	struct gpioevent_request selevreq = {};	// SEL signal event request
+	struct gpioevent_request dt0evreq = {};	// DT0 signal event request
 
 	int epfd;							// epoll file descriptor
 #endif	// USE_SEL_EVENT_ENABLE

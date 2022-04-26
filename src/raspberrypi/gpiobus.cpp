@@ -232,7 +232,6 @@ BOOL GPIOBUS::Init(mode_e mode)
 
 	// Event request setting
 	strcpy(selevreq.consumer_label, "RaSCSI");
-	selevreq.lineoffset = PIN_SEL;
 	selevreq.handleflags = GPIOHANDLE_REQUEST_INPUT;
 #if SIGNAL_CONTROL_MODE < 2
 	selevreq.eventflags = GPIOEVENT_REQUEST_FALLING_EDGE;
@@ -240,8 +239,22 @@ BOOL GPIOBUS::Init(mode_e mode)
 	selevreq.eventflags = GPIOEVENT_REQUEST_RISING_EDGE;
 #endif	// SIGNAL_CONTROL_MODE
 
+	memcpy(&dt0evreq, &selevreq, sizeof(selevreq));
+
+	selevreq.lineoffset = PIN_SEL;
+
 	//Get event request
 	if (ioctl(fd, GPIO_GET_LINEEVENT_IOCTL, &selevreq) == -1) {
+		LOGERROR("Unable to register event request. Is RaSCSI already running?")
+		close(fd);
+		return FALSE;
+	}
+
+	// FIXME - need to check edges of every pin that is used for active controller
+	dt0evreq.lineoffset = PIN_DT0;
+
+	//Get event request
+	if (ioctl(fd, GPIO_GET_LINEEVENT_IOCTL, &dt0evreq) == -1) {
 		LOGERROR("Unable to register event request. Is RaSCSI already running?")
 		close(fd);
 		return FALSE;
@@ -256,6 +269,10 @@ BOOL GPIOBUS::Init(mode_e mode)
 	ev.events = EPOLLIN | EPOLLPRI;
 	ev.data.fd = selevreq.fd;
 	epoll_ctl(epfd, EPOLL_CTL_ADD, selevreq.fd, &ev);
+	memset(&ev, 0, sizeof(ev));
+	ev.events = EPOLLIN | EPOLLPRI;
+	ev.data.fd = dt0evreq.fd;
+	epoll_ctl(epfd, EPOLL_CTL_ADD, dt0evreq.fd, &ev);
 #else
 	// Edge detection setting
 #if SIGNAL_CONTROL_MODE == 2
@@ -457,7 +474,7 @@ void GPIOBUS::SetENB(BOOL ast)
 //	Get BSY signal
 //
 //---------------------------------------------------------------------------
-bool GPIOBUS::GetBSY()
+BOOL GPIOBUS::GetBSY()
 {
 	return GetSignal(PIN_BSY);
 }
@@ -861,6 +878,38 @@ int GPIOBUS::CommandHandShake(BYTE *buf)
 		goto irq_enable_exit;
 	}
 
+	// The ICD AdSCSI ST, AdSCSI Plus ST and AdSCSI Micro ST host adapters allow SCSI devices to be connected
+	// to the ACSI bus of Atari ST/TT computers and some clones. ICD-aware drivers prepend a $1F byte in front
+	// of the CDB (effectively resulting in a custom SCSI command) in order to get access to the full SCSI
+	// command set. Native ACSI is limited to the low SCSI command classes with command bytes < $20.
+	// Most other host adapters (e.g. LINK96/97 and the one by Inventronik) and also several devices (e.g.
+	// UltraSatan or GigaFile) that can directly be connected to the Atari's ACSI port also support ICD
+	// semantics. I fact, these semantics have become a standard in the Atari world.
+
+	// RaSCSI becomes ICD compatible by ignoring the prepended $1F byte before processing the CDB.
+	if (*buf == 0x1F) {
+		SetSignal(PIN_REQ, ON);
+
+		ret = WaitSignal(PIN_ACK, TRUE);
+
+		SysTimer::SleepNsec(SCSI_DELAY_BUS_SETTLE_DELAY_NS);
+
+		// Get the actual SCSI command
+		*buf = GetDAT();
+
+		SetSignal(PIN_REQ, OFF);
+
+		if (!ret) {
+			goto irq_enable_exit;
+		}
+
+		WaitSignal(PIN_ACK, FALSE);
+
+		if (!ret) {
+			goto irq_enable_exit;
+		}
+	}
+
 	count = GetCommandByteCount(*buf);
 
 	// Increment buffer pointer
@@ -1138,8 +1187,13 @@ int GPIOBUS::PollSelectEvent()
 		return -1;
 	}
 
-	if (read(selevreq.fd, &gpev, sizeof(gpev)) < 0) {
-            LOGWARN("%s read failed", __PRETTY_FUNCTION__);
+	// FIXME - use a loop
+	if (epev.data.fd == selevreq.fd && read(selevreq.fd, &gpev, sizeof(gpev)) < 0) {
+            LOGWARN("%s SEL read failed", __PRETTY_FUNCTION__);
+            return -1;
+        }
+	else if (epev.data.fd == dt0evreq.fd && read(dt0evreq.fd, &gpev, sizeof(gpev)) < 0) {
+            LOGWARN("%s DT0 read failed", __PRETTY_FUNCTION__);
             return -1;
         }
 
@@ -1385,6 +1439,7 @@ BOOL GPIOBUS::WaitSignal(int pin, BOOL ast)
 //---------------------------------------------------------------------------
 void GPIOBUS::DisableIRQ()
 {
+#ifdef __linux__
 	if (rpitype == 4) {
 		// RPI4 is disabled by GICC
 		giccpmr = gicc[GICC_PMR];
@@ -1399,6 +1454,9 @@ void GPIOBUS::DisableIRQ()
 		irptenb = irpctl[IRPT_ENB_IRQ_1];
 		irpctl[IRPT_DIS_IRQ_1] = irptenb & 0xf;
 	}
+#else
+	(void)0;
+#endif
 }
 
 //---------------------------------------------------------------------------
