@@ -37,6 +37,7 @@ Filepath hdffile;					// HDF file
 bool restore;						// Restore flag
 BYTE buffer[BUFSIZE];				// Work buffer
 int result;							// Result code
+BYTE params[8]={0x01,0x32,0x04,0x00,0x80,0x00,0x80,0x0b}; // drive params hard coded (0x132 cyls, 0x4 heads)
 
 void Cleanup();
 
@@ -236,6 +237,8 @@ bool Selection(int id)
 	data = 0;
 	data |= (1 << id);
 	bus.SetDAT(data);
+	// For XEBEC this can be a bit quick, needs at least 100ns before SEL
+	usleep(1); 
 	bus.SetSEL(TRUE);
 
 	// Wait for BSY
@@ -458,6 +461,60 @@ exit:
 
 //---------------------------------------------------------------------------
 //
+//	Set parameters
+//
+//---------------------------------------------------------------------------
+
+int SetParams(int id)
+{
+	BYTE cmd[256];
+	int count;
+
+	// Initialize result codes
+	result = 0;
+	count = 0;
+
+	if (!Selection(id)) {
+		result = -1;
+		goto exit;
+	}
+
+	memset(cmd, 0x00, 6);
+	cmd[0] = 0xc;
+	if (!Command(cmd, 6)) {
+		result = -2;
+		goto exit;
+	}
+
+	count = DataOut(params, 8);
+	if (count <= 0) {
+		result = -3;
+		goto exit;
+	}
+
+	if (Status() < 0) {
+		result = -4;
+		goto exit;
+	}
+
+	if (MessageIn() < 0) {
+		result = -5;
+		goto exit;
+	}
+
+exit:
+	BusFree();
+
+	// If successful, return number of transfers
+	if (result == 0) {
+		return count;
+	}
+
+	return result;
+}
+
+//---------------------------------------------------------------------------
+//
 //	READ6 execution
 //
 //---------------------------------------------------------------------------
@@ -648,7 +705,12 @@ int main(int argc, char* argv[])
 		fprintf(stderr, "REQUEST SENSE ERROR %d\n", count);
 		goto cleanup_exit;
 	}
-
+	// SET PARAMS (hard coded 10MB at present)
+	count = SetParams(targetid);
+	if (count < 0) {
+		fprintf(stderr, "PARAM SET ERROR %d\n", count);
+		goto cleanup_exit;
+	}
 	printf("Number of blocks        : %d Blocks\n", bnum);
 	printf("Block length            : %d Bytes\n", bsiz);
 
